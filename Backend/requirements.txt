@@ -1,0 +1,14 @@
+Django==4.2.0
+djangorestframework
+django-cors-headers
+python-dotenv
+```
+
+**Create `Procfile`** (tells Railway how to start):
+```
+web: python manage.py runserver 0.0.0.0:$PORT
+```
+
+Or if you use gunicorn (better for production):
+```
+web: gunicorn backend_project.wsgi --bind 0.0.0.0:$PORT
