@@ -144,3 +144,11 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
+
+import os
+
+# Allow Railway domain
+ALLOWED_HOSTS = ['*']  # Or specific: ['yourapp.railway.app', 'localhost']
+
+# Port
+PORT = int(os.environ.get('PORT', 8000))
