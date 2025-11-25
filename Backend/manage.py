@@ -20,3 +20,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
+ALLOWED_HOSTS = ['clicktoeat-pw67.onrender.com', 'localhost', '127.0.0.1']
