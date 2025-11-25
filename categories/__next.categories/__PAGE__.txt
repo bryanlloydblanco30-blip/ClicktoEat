@@ -1,5 +1,0 @@
-1:"$Sreact.fragment"
-2:I[61355,["/ClicktoEat/_next/static/chunks/27690fcf9e30b7eb.js","/ClicktoEat/_next/static/chunks/d5ce27e21a15ec85.js"],"OutletBoundary"]
-3:"$Sreact.suspense"
-0:{"buildId":"NAcfbrfH5iMDpBsx0V_sw","rsc":["$","$1","c",{"children":[["$","main",null,{"children":"Hello"}],null,["$","$L2",null,{"children":["$","$3",null,{"name":"Next.MetadataOutlet","children":"$@4"}]}]]}],"loading":null,"isPartial":false}
-4:null
