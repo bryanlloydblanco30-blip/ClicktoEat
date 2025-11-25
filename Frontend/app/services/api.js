@@ -1,6 +1,7 @@
 // services/api.js
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
+fetch(`${API_URL}/api/menu/`)
 
 // Session management for cart
 export function getSessionId() {
@@ -343,4 +344,6 @@ export const getMenuItemById = async (id) => {
     console.error('Error fetching menu item:', error);
     throw error;
   }
+
+  
 };
