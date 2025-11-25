@@ -327,3 +327,20 @@ export function hasRole(role) {
   const user = getCurrentUser();
   return user && user.role === role;
 }
+
+export const getMenuItemById = async (id) => {
+  try {
+    const response = await fetch(`${API_URL}/menu/${id}`, {
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch menu item');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching menu item:', error);
+    throw error;
+  }
+};

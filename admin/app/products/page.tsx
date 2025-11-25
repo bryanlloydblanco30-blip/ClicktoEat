@@ -238,15 +238,6 @@ export default function ProductsAdmin() {
           <div>
             <label className="block mb-2 text-sm font-medium">Product Image *</label>
             {/* @ts-ignore */}
-            <FileUploaderRegular
-              pubkey="60b65262e57242452cae" 
-              sourceList={["local", "url", "camera"]}
-              classNameUploader="uc-light"
-              onChange={handleUpload}
-              imagesOnly
-              maxSize={5 * 1024 * 1024}
-              multiple={false}
-            />
             {formData.image_url && (
               <img 
                 src={formData.image_url} 

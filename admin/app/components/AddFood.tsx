@@ -103,18 +103,7 @@ export default function AddFood() {
         className="border p-2 rounded w-full mb-4"
       />
 
-      <div className="mb-4">
-        <FileUploaderRegular
-          pubkey="60b65262e57242452cae" 
-          sourceList={["local", "url", "camera"]}
-          classNameUploader="uc-light"
-          onChange={handleUpload}
-          imagesOnly
-          maxSize={5 * 1024 * 1024}
-        />
-      </div>
-
-      {/* Show loading / preview */}
+      {/* Show loading / preview */} 
       {uploading && <p className="text-gray-500 mb-2">Uploading image...</p>}
       {imgUrl && (
         <img

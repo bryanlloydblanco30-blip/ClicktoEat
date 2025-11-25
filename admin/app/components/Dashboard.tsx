@@ -45,6 +45,31 @@ const ResponsiveContainer = dynamic(
   { ssr: false }
 );
 
+// Type definitions
+type SalesByDay = {
+  name: string;
+  sales: number;
+};
+
+type OrdersByStatus = {
+  name: string;
+  value: number;
+};
+
+type Stats = {
+  pending: number;
+  confirmed: number;
+  preparing: number;
+  ready: number;
+  completed: number;
+  cancelled: number;
+  totalOrders: number;
+  salesToday: number;
+  topProduct: string;
+  salesByDay: SalesByDay[];
+  ordersByStatus: OrdersByStatus[];
+};
+
 // API call
 async function getAllOrders() {
   const response = await fetch('http://127.0.0.1:8000/api/admin/orders/');
@@ -53,7 +78,7 @@ async function getAllOrders() {
 }
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<Stats>({
     pending: 0,
     confirmed: 0,
     preparing: 0,
@@ -126,7 +151,7 @@ export default function Dashboard() {
     }
   };
 
-  const calculateSalesByDay = (orders: any[]) => {
+  const calculateSalesByDay = (orders: any[]): SalesByDay[] => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const salesMap: { [key: string]: number } = {};
     
@@ -144,7 +169,7 @@ export default function Dashboard() {
     }));
   };
 
-  const findTopProduct = (orders: any[]) => {
+  const findTopProduct = (orders: any[]): string => {
     const productCount: { [key: string]: number } = {};
     
     orders.forEach((order: any) => {
