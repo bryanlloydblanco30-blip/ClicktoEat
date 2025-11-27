@@ -326,3 +326,17 @@ export async function getMenuItemById(id) {
   
   return response.json();
 }
+
+// ==================== HELPER FUNCTIONS ====================
+
+// Get or create session ID
+function getSessionId() {
+  if (typeof window === 'undefined') return null; // Server-side check
+  
+  let sessionId = localStorage.getItem('session_id');
+  if (!sessionId) {
+    sessionId = 'session_' + Math.random().toString(36).substr(2, 9) + Date.now();
+    localStorage.setItem('session_id', sessionId);
+  }
+  return sessionId;
+}
