@@ -303,21 +303,26 @@ export function hasRole(role) {
   return user && user.role === role;
 }
 
-export const getMenuItemById = async (id) => {
-  try {
-    const response = await fetch(`${API_URL}/menu/${id}`, {
-      credentials: 'include',
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch menu item');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching menu item:', error);
-    throw error;
-  }
+// ==================== MENU FUNCTIONS ====================
 
+// Get all available menu items
+export async function getMenuItems() {
+  const response = await fetch(`${API_BASE_URL}/api/menu/`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch menu items');
+  }
+  return response.json();
+}
+
+// Get menu item by ID
+export async function getMenuItemById(id) {
+  const response = await fetch(`${API_BASE_URL}/api/menu/${id}/`, {
+    credentials: 'include',
+  });
   
-};
+  if (!response.ok) {
+    throw new Error('Failed to fetch menu item');
+  }
+  
+  return response.json();
+}
