@@ -1,30 +1,4 @@
-// services/api.js
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-fetch(`${API_URL}/api/menu/`)
-
-// Session management for cart
-export function getSessionId() {
-  if (typeof window === 'undefined') return null;
-  
-  let sessionId = localStorage.getItem('cart_session_id');
-  if (!sessionId) {
-    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('cart_session_id', sessionId);
-  }
-  return sessionId;
-}
-
-// ==================== PUBLIC MENU ITEMS ====================
-
-// Get menu items (public - only available items)
-export async function getMenuItems() {
-  const response = await fetch(`${API_BASE_URL}/api/menu/`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch menu items');
-  }
-  return response.json();
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // ==================== CART FUNCTIONS ====================
 
