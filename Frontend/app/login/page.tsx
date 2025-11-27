@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { login } from '../services/api';
 
+// Use environment variable for admin URL
+const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001';
+
 export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -50,7 +53,7 @@ export default function LoginPage() {
           
           // Encode user data to pass to admin app
           const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
-          const redirectUrl = `http://localhost:3001?user=${userDataEncoded}`;
+          const redirectUrl = `${ADMIN_URL}?user=${userDataEncoded}`;
           
           console.log('→ Redirecting to:', redirectUrl);
           
@@ -60,18 +63,17 @@ export default function LoginPage() {
           }, 100);
           return;
         } else if (userData.role === 'staff') {
-        console.log('→ Staff - Redirecting to admin owner page');
-        localStorage.setItem('food_partner', userData.food_partner);
-        
-        // Redirect to the admin app (port 3001) with user data
-        const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
-        const redirectUrl = `http://localhost:3001/owner?user=${userDataEncoded}`;
-        
-        setTimeout(() => {
+          console.log('→ Staff - Redirecting to admin owner page');
+          localStorage.setItem('food_partner', userData.food_partner);
+          
+          // Redirect to the admin app (port 3001) with user data
+          const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
+          const redirectUrl = `${ADMIN_URL}/owner?user=${userDataEncoded}`;
+          
+          setTimeout(() => {
             window.location.href = redirectUrl;
-        }, 100);
-        return;
-        
+          }, 100);
+          return;
         } else {
           console.log('→ Member - Redirecting to home');
           router.push('/');
