@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  basePath: '/ClicktoEat', // Replace with your actual repo name
+  //basePath: '/ClicktoEat', // Replace with your actual repo name
   images: {
     unoptimized: true, // Required for static export
     remotePatterns: [
