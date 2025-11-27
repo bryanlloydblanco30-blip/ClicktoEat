@@ -92,3 +92,17 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+
+# CSRF Settings for Render
+CSRF_TRUSTED_ORIGINS = [
+    "https://clicktoeat-pw67.onrender.com",
+    # Add your frontend URL if it's separate
+    "https://clicktoeat-frontend.onrender.com",  
+]
+
+# CORS Settings
+CORS_ALLOWED_ORIGINS = [
+    "https://clicktoeat-pw67.onrender.com",
+    "https://clicktoeat-frontend.onrender.com",  # Your frontend URL
+]
