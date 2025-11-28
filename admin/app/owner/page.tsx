@@ -21,103 +21,99 @@ interface Order {
   rejectReason?: string;
 }
 
-function OwnerContent() {
-  const searchParams = useSearchParams();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [userInfo, setUserInfo] = useState<any>(null);
+    function OwnerContent() {
+    const searchParams = useSearchParams();
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [userInfo, setUserInfo] = useState<any>(null);
 
-  useEffect(() => {
-    const userParam = searchParams.get('user');
-    
-    if (userParam) {
-      try {
-        const user = JSON.parse(decodeURIComponent(userParam));
+    useEffect(() => {
+        const userParam = searchParams.get('user');
         
-        if (user.role !== 'staff') {
-          window.location.href = 'http://localhost:3000/login';
-          return;
+        if (userParam) {
+        try {
+            const user = JSON.parse(decodeURIComponent(userParam));
+            
+            if (user.role !== 'staff') {
+            window.location.href = 'http://localhost:3000/login';
+            return;
+            }
+            
+            localStorage.setItem('user', JSON.stringify(user));
+            setUserInfo(user);
+            loadOrders(user.food_partner);
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            window.location.href = 'http://localhost:3000/login';
         }
+        } else {
+        const userStr = localStorage.getItem('user');
         
-        localStorage.setItem('user', JSON.stringify(user));
-        setUserInfo(user);
-        loadOrders(user.food_partner);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        window.location.href = 'http://localhost:3000/login';
-      }
-    } else {
-      const userStr = localStorage.getItem('user');
-      
-      if (!userStr) {
-        window.location.href = 'http://localhost:3000/login';
-        return;
-      }
-
-      try {
-        const user = JSON.parse(userStr);
-        
-        if (user.role !== 'staff') {
-          window.location.href = 'http://localhost:3000/login';
-          return;
+        if (!userStr) {
+            window.location.href = 'http://localhost:3000/login';
+            return;
         }
 
-        setUserInfo(user);
-        loadOrders(user.food_partner);
-      } catch (error) {
-        console.error('Auth error:', error);
-        window.location.href = 'http://localhost:3000/login';
-      }
-    }
-  }, [searchParams]);
+        try {
+            const user = JSON.parse(userStr);
+            
+            if (user.role !== 'staff') {
+            window.location.href = 'http://localhost:3000/login';
+            return;
+            }
 
-  const loadOrders = async (foodPartner: string) => {
+            setUserInfo(user);
+            loadOrders(user.food_partner);
+        } catch (error) {
+            console.error('Auth error:', error);
+            window.location.href = 'http://localhost:3000/login';
+        }
+        }
+    }, [searchParams]);
+
+    const loadOrders = async (foodPartner: string) => {
     try {
-      console.log('🔍 Loading orders for:', foodPartner);
-      
-      const url = `http://localhost:8000/api/partner/orders/?partner=${encodeURIComponent(foodPartner)}`;
-      console.log('📡 Fetching from:', url);
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) {
+        console.log('🔍 Loading orders for:', foodPartner);
+        
+        const url = `http://localhost:8000/api/partner/orders/?partner=${encodeURIComponent(foodPartner)}`;
+        console.log('📡 Fetching from:', url);
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
         console.error('❌ Backend error:', response.status, response.statusText);
         throw new Error(`Backend returned ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('📦 Backend response:', data);
-      
-      if (!data.orders || data.orders.length === 0) {
+        }
+        
+        const data = await response.json();
+        console.log('📦 Backend response:', data);
+        
+        if (!data.orders || data.orders.length === 0) {
         console.log('ℹ️ No orders found for this partner');
         setOrders([]);
         setLoading(false);
         return;
-      }
-      
-      const transformedOrders = data.orders.map((order: any) => ({
+        }
+        
+        const transformedOrders = data.orders.map((order: any) => ({
         id: order.id,
         name: order.customer_name,
         item: order.items.map((i: any) => i.name).join(', '),
         quantity: order.items.reduce((sum: number, i: any) => sum + i.quantity, 0),
         totalPrice: parseFloat(order.total),
         status: order.status as OrderStatus
-      }));
-      
-      console.log('✅ Transformed orders:', transformedOrders);
-      setOrders(transformedOrders);
+        }));
+        
+        console.log('✅ Transformed orders:', transformedOrders);
+        setOrders(transformedOrders);
     } catch (error) {
-      console.error('❌ Error loading orders:', error);
-      console.log('⚠️ Using temporary test data');
-      setOrders([
-        { id: 1, name: "John Santos", item: "Burger Meal", quantity: 2, totalPrice: 300, status: "pending" },
-        { id: 2, name: "Maria Cruz", item: "Spaghetti", quantity: 1, totalPrice: 150, status: "pending" },
-        { id: 3, name: "Alex Dela Vega", item: "Chicken Rice", quantity: 3, totalPrice: 450, status: "pending" },
-      ]);
+        console.error('❌ Error loading orders:', error);
+        alert('Failed to load orders. Please check your connection and try again.');
+        setOrders([]); // Empty state - no fake data
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+    };
 
   const updateStatus = async (orderId: number, newStatus: OrderStatus, reason?: string) => {
     try {
