@@ -22,7 +22,6 @@ export default function ProductsAdmin() {
     const [loading, setLoading] = useState(true);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     
-    // 1. UPDATED STATE to include 'available'
     const [formData, setFormData] = useState({ 
       name: "", 
       price: "", 
@@ -73,7 +72,7 @@ export default function ProductsAdmin() {
           image_url: formData.image_url,
           description: formData.description || '',
           food_partner: formData.food_partner,
-          available: formData.available // 2. SEND ACTUAL CHECKBOX VALUE (Was hardcoded true)
+          available: formData.available
         });
         
         if (response.item) {
@@ -114,10 +113,9 @@ export default function ProductsAdmin() {
       image_url: product.image_url,
       description: product.description || '',
       food_partner: product.food_partner || '',
-      available: product.available ?? true // 3. LOAD CURRENT AVAILABILITY
+      available: product.available ?? true
     });
     
-    // Scroll to top for better UX
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -133,7 +131,6 @@ export default function ProductsAdmin() {
       } catch (error: any) {
         console.error('Detailed delete error:', error);
         
-        // 4. SPECIFIC ERROR HANDLING FOR THE USER
         if (error.message && error.message.includes("Mark as unavailable")) {
            alert("⚠️ CANNOT DELETE: This item has previous orders.\n\nSOLUTION: Click 'Edit' and uncheck the 'Product is Available' box to hide it from the menu instead.");
         } else {
@@ -221,7 +218,7 @@ export default function ProductsAdmin() {
             className="border p-2 rounded w-full"
           />
           
-          {/* 5. NEW AVAILABILITY CHECKBOX */}
+          {/* Availability Checkbox */}
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded border border-gray-200">
             <input
                 type="checkbox"
@@ -235,15 +232,35 @@ export default function ProductsAdmin() {
             </label>
           </div>
 
-          <div>
+          {/* IMAGE UPLOAD SECTION - THIS WAS MISSING THE UPLOADER */}
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
             <label className="block mb-2 text-sm font-medium">Product Image *</label>
-            {/* @ts-ignore */}
+            
+            {/* Show current image if exists */}
             {formData.image_url && (
-              <img 
-                src={formData.image_url} 
-                alt="Preview" 
-                className="mt-2 w-32 h-32 object-cover rounded"
-              />
+              <div className="mb-3">
+                <img 
+                  src={formData.image_url} 
+                  alt="Preview" 
+                  className="w-32 h-32 object-cover rounded border-2 border-gray-200"
+                />
+              </div>
+            )}
+            
+            {/* Uploadcare File Uploader */}
+            <FileUploaderRegular
+              sourceList="local, url, camera"
+              classNameUploader="uc-light"
+              pubkey={process.env.NEXT_PUBLIC_UPLOADCARE_PUBLIC_KEY || "YOUR_UPLOADCARE_KEY"}
+              maxLocalFileSizeBytes={10000000}
+              imgOnly={true}
+              onChange={handleUpload}
+            />
+            
+            {!formData.image_url && (
+              <p className="text-sm text-gray-500 mt-2">
+                Click above to upload product image
+              </p>
             )}
           </div>
 
@@ -304,7 +321,6 @@ export default function ProductsAdmin() {
                       <div className="font-medium">{product.name}</div>
                       <div className="text-xs text-gray-500">{product.category}</div>
                   </td>
-                  {/* 6. STATUS BADGE */}
                   <td className="p-3">
                     {product.available ? (
                         <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Active</span>
