@@ -132,7 +132,7 @@ export default function Mainpage() {
         {filteredFoods.length > 0 ? (
           filteredFoods.map((food) => (
             <div key={food.id} className="relative">
-              <Link href={`/chosen_food/${food.id}`}>
+              <Link href={`/chosen_food?id=${food.id}`}>
                 <div className="relative group overflow-hidden rounded-2xl shadow-lg cursor-pointer bg-white hover:shadow-2xl transition-shadow duration-300">
                   {/* Food Image */}
                   <div className="relative w-full h-64">
