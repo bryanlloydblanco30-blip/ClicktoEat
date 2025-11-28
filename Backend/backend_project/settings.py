@@ -1,6 +1,8 @@
 from pathlib import Path
 import os
 import dj_database_url
+from dotenv import load_dotenv
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -107,3 +109,4 @@ CORS_ALLOWED_ORIGINS = [
     "https://clicktoeat-pw67.onrender.com",
     "https://clicktoeat-frontend.onrender.com",  # Your frontend URL
 ]
+
