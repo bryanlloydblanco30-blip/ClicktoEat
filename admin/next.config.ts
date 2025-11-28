@@ -1,8 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  basePath: '/ClicktoEat', // Replace with your actual repo name
+  // Remove basePath for Render deployment
+  // basePath: '/ClicktoEat', // Only needed for GitHub Pages
+  output: 'standalone', // Add this for Render
   images: {
-    unoptimized: true, // Required for static export
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -12,7 +14,6 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'uploadcare.com',
       },
-      // Add any other image hosting services you use
     ],
   },
 }
