@@ -75,7 +75,8 @@ interface Order {
     try {
         console.log('🔍 Loading orders for:', foodPartner);
         
-        const url = `http://localhost:8000/api/partner/orders/?partner=${encodeURIComponent(foodPartner)}`;
+      
+        const url = `https://clicktoeat-pw67.onrender.com/api/partner/orders/?partner=${encodeURIComponent(foodPartner)}`;
         console.log('📡 Fetching from:', url);
         
         const response = await fetch(url);
@@ -119,7 +120,7 @@ interface Order {
     try {
       console.log(`🔄 Updating order #${orderId} to ${newStatus}`);
       
-      const response = await fetch(`http://localhost:8000/api/partner/orders/${orderId}/status/`, {
+      const response = await fetch(`https://clicktoeat-pw67.onrender.com/api/partner/orders/${orderId}/status/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
