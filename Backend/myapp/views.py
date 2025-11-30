@@ -8,9 +8,11 @@ from django.db.models import F, Sum
 import json
 from .models import MenuItem, Cart, CartItem, Order, OrderItem, Favorite
 from datetime import datetime
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_http_methods
 from urllib.parse import unquote
 
-@csrf_exempt
+@ensure_csrf_cookie
 @require_http_methods(["POST"])
 def signup_view(request):
     """User signup"""
@@ -21,8 +23,8 @@ def signup_view(request):
         password = data.get('password')
         role = data.get('role', 'member')
         food_partner = data.get('food_partner', '')
-        full_name = data.get('full_name', '')      # NEW
-        sr_code = data.get('sr_code', '')          # NEW
+        full_name = data.get('full_name', '')
+        sr_code = data.get('sr_code', '')
         
         # Validation
         if not all([username, email, password, full_name, sr_code]):
@@ -47,16 +49,16 @@ def signup_view(request):
             password=password
         )
         
-        # Create profile with role, full_name, and sr_code
+        # Create profile
         profile = UserProfile.objects.create(
             user=user,
             role=role,
             food_partner=food_partner if role == 'staff' else '',
-            full_name=full_name,    # NEW
-            sr_code=sr_code         # NEW
+            full_name=full_name,
+            sr_code=sr_code
         )
  
-        # Log the user in
+        # Log the user in (creates session)
         login(request, user)
         
         return JsonResponse({
@@ -68,8 +70,8 @@ def signup_view(request):
                 'email': user.email,
                 'role': profile.role,
                 'food_partner': profile.food_partner,
-                'full_name': profile.full_name,    # NEW
-                'sr_code': profile.sr_code         # NEW
+                'full_name': profile.full_name,
+                'sr_code': profile.sr_code
             }
         }, status=201)
         
@@ -79,7 +81,8 @@ def signup_view(request):
         traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
 
-@csrf_exempt
+
+@ensure_csrf_cookie
 @require_http_methods(["POST"])
 def login_view(request):
     """User login"""
@@ -95,6 +98,7 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
+            # Login creates the session
             login(request, user)
             
             # Get user profile
@@ -108,7 +112,9 @@ def login_view(request):
                     'username': user.username,
                     'email': user.email,
                     'role': profile.role,
-                    'food_partner': profile.food_partner
+                    'food_partner': profile.food_partner,
+                    'full_name': getattr(profile, 'full_name', ''),
+                    'sr_code': getattr(profile, 'sr_code', ''),
                 }
             })
         else:
@@ -121,7 +127,7 @@ def login_view(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@csrf_exempt
+@ensure_csrf_cookie
 @require_http_methods(["POST"])
 def logout_view(request):
     """User logout"""
@@ -135,22 +141,79 @@ def logout_view(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+@ensure_csrf_cookie
+@require_http_methods(["GET"])
 def check_auth(request):
     """Check if user is authenticated"""
     if request.user.is_authenticated:
-        profile = request.user.profile
-        return JsonResponse({
-            'authenticated': True,
-            'user': {
-                'id': request.user.id,
-                'username': request.user.username,
-                'email': request.user.email,
-                'role': profile.role,
-                'food_partner': profile.food_partner
-            }
-        })
+        try:
+            profile = request.user.profile
+            return JsonResponse({
+                'authenticated': True,
+                'user': {
+                    'id': request.user.id,
+                    'username': request.user.username,
+                    'email': request.user.email,
+                    'role': profile.role,
+                    'food_partner': profile.food_partner,
+                    'full_name': getattr(profile, 'full_name', ''),
+                    'sr_code': getattr(profile, 'sr_code', ''),
+                }
+            })
+        except Exception as e:
+            # If profile doesn't exist
+            return JsonResponse({
+                'authenticated': True,
+                'user': {
+                    'id': request.user.id,
+                    'username': request.user.username,
+                    'email': request.user.email,
+                    'role': 'member',
+                    'food_partner': '',
+                }
+            })
     else:
-        return JsonResponse({'authenticated': False})
+        return JsonResponse({
+            'authenticated': False,
+            'user': None
+        }, status=401)
+
+@ensure_csrf_cookie  # CRITICAL: This ensures CSRF cookie is set
+@require_http_methods(["GET"])
+def check_auth(request):
+    """Check if user is authenticated"""
+    if request.user.is_authenticated:
+        try:
+            profile = request.user.profile
+            return JsonResponse({
+                'authenticated': True,
+                'user': {
+                    'id': request.user.id,
+                    'username': request.user.username,
+                    'email': request.user.email,
+                    'role': profile.role,
+                    'food_partner': profile.food_partner,
+                    'full_name': getattr(profile, 'full_name', ''),
+                    'sr_code': getattr(profile, 'sr_code', ''),
+                }
+            })
+        except Exception as e:
+            # If profile doesn't exist or has issues
+            return JsonResponse({
+                'authenticated': True,
+                'user': {
+                    'id': request.user.id,
+                    'username': request.user.username,
+                    'email': request.user.email,
+                    'role': 'member',
+                    'food_partner': '',
+                }
+            })
+    else:
+        return JsonResponse({
+            'authenticated': False,
+            'user': None
+        }, status=401)
 # ==================== MENU VIEWS ====================
 
 def get_menu_items(request):
