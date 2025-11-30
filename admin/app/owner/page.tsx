@@ -13,12 +13,14 @@ type OrderStatus =
 
 interface Order {
   id: number;
-  name: string;
+  customer_name: string;  // ✅ Changed from 'name' to match backend
   item: string;
   quantity: number;
   totalPrice: number;
   status: OrderStatus;
   rejectReason?: string;
+  pickup_date?: string;  // ✅ Added
+  pickup_time?: string;  // ✅ Added
 }
 
 function OwnerContent() {
@@ -108,13 +110,16 @@ function OwnerContent() {
         return;
       }
       
+      // ✅ Updated transformation to preserve customer_name
       const transformedOrders = data.orders.map((order: any) => ({
         id: order.id,
-        name: order.customer_name,
+        customer_name: order.customer_name || 'Guest',  // ✅ Use customer_name from backend
         item: order.items.map((i: any) => i.name).join(', '),
         quantity: order.items.reduce((sum: number, i: any) => sum + i.quantity, 0),
         totalPrice: parseFloat(order.total),
-        status: order.status as OrderStatus
+        status: order.status as OrderStatus,
+        pickup_date: order.pickup_date,  // ✅ Added
+        pickup_time: order.pickup_time   // ✅ Added
       }));
       
       console.log('✅ Transformed orders:', transformedOrders);
@@ -187,17 +192,23 @@ function OwnerContent() {
 
   const handleLogout = () => {
     console.log('👋 Logging out...');
-    // Clear all user data
     localStorage.removeItem('user');
     localStorage.removeItem('food_partner');
     localStorage.removeItem('cart_session_id');
     localStorage.removeItem('session_id');
-    
-    // Redirect and replace history to prevent back button
     window.location.replace('https://clicktoeat-frontend.onrender.com/login');
   };
 
-  // Filter orders based on active tab
+  // ✅ Helper function to format time
+  const formatTime = (timeString?: string) => {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
   const activeOrders = orders.filter(o => 
     o.status === 'pending' || o.status === 'confirmed' || o.status === 'preparing' || o.status === 'ready'
   );
@@ -266,7 +277,7 @@ function OwnerContent() {
         </button>
       </div>
 
-      {/* Orders Grid */}
+      {/* Active Orders Grid */}
       {activeTab === "active" && (
         <>
           {activeOrders.length === 0 ? (
@@ -282,10 +293,24 @@ function OwnerContent() {
                   className="bg-white shadow-xl border rounded-2xl p-6 space-y-4"
                 >
                   <h2 className="text-2xl font-semibold">Order #{order.id}</h2>
-                  <p className="text-lg"><strong>Name:</strong> {order.name}</p>
-                  <p className="text-lg"><strong>Item:</strong> {order.item}</p>
+                  
+                  {/* ✅ Customer Name with better styling */}
+                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <p className="text-sm text-blue-600 font-medium">Customer</p>
+                    <p className="text-lg font-bold text-blue-900">{order.customer_name}</p>
+                  </div>
+                  
+                  {/* ✅ Pickup Time if available */}
+                  {order.pickup_time && (
+                    <div className="bg-amber-50 p-2 rounded border border-amber-200">
+                      <p className="text-xs text-amber-600">Pickup Time</p>
+                      <p className="text-sm font-semibold text-amber-900">{formatTime(order.pickup_time)}</p>
+                    </div>
+                  )}
+                  
+                  <p className="text-lg"><strong>Items:</strong> {order.item}</p>
                   <p className="text-lg"><strong>Quantity:</strong> {order.quantity}</p>
-                  <p className="text-lg font-semibold">Total Price: ₱{order.totalPrice}</p>
+                  <p className="text-lg font-semibold">Total: ₱{order.totalPrice.toFixed(2)}</p>
                   <p className="text-sm font-medium">
                     Status: <span className="text-orange-600 font-bold">{order.status.toUpperCase()}</span>
                   </p>
@@ -348,6 +373,7 @@ function OwnerContent() {
         </>
       )}
 
+      {/* History Orders Grid */}
       {activeTab === "history" && (
         <>
           {historyOrders.length === 0 ? (
@@ -363,10 +389,16 @@ function OwnerContent() {
                   className="bg-white shadow-xl border rounded-2xl p-6 space-y-4"
                 >
                   <h2 className="text-2xl font-semibold">Order #{order.id}</h2>
-                  <p className="text-lg"><strong>Name:</strong> {order.name}</p>
-                  <p className="text-lg"><strong>Item:</strong> {order.item}</p>
+                  
+                  {/* ✅ Customer Name */}
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-600 font-medium">Customer</p>
+                    <p className="text-lg font-bold text-gray-900">{order.customer_name}</p>
+                  </div>
+                  
+                  <p className="text-lg"><strong>Items:</strong> {order.item}</p>
                   <p className="text-lg"><strong>Quantity:</strong> {order.quantity}</p>
-                  <p className="text-lg font-semibold">Total Price: ₱{order.totalPrice}</p>
+                  <p className="text-lg font-semibold">Total: ₱{order.totalPrice.toFixed(2)}</p>
 
                   {order.status === "completed" && (
                     <div className="bg-green-50 p-3 rounded-lg">
