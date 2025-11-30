@@ -762,10 +762,29 @@ def get_food_partners(request):
 def get_partner_menu_items(request, partner_name):
     """Get all menu items for a specific food partner"""
     try:
+        # Decode URL-encoded partner name
+        decoded_partner_name = unquote(partner_name)
+        
+        print(f"=" * 50)
+        print(f"GET PARTNER MENU REQUEST")
+        print(f"Raw partner_name: {partner_name}")
+        print(f"Decoded partner_name: {decoded_partner_name}")
+        print(f"=" * 50)
+        
+        # Query with the decoded name
         items = MenuItem.objects.filter(
-            food_partner=partner_name,
+            food_partner=decoded_partner_name,
             available=True
         )
+        
+        print(f"Found {items.count()} items for partner: {decoded_partner_name}")
+        
+        # If no items found, try to find what partners exist
+        if items.count() == 0:
+            all_partners = MenuItem.objects.filter(
+                available=True
+            ).values_list('food_partner', flat=True).distinct()
+            print(f"Available partners in database: {list(all_partners)}")
         
         data = [{
             'id': item.id,
@@ -777,13 +796,18 @@ def get_partner_menu_items(request, partner_name):
             'food_partner': item.food_partner,
         } for item in items]
         
+        print(f"Returning {len(data)} items")
+        print(f"=" * 50)
+        
         return JsonResponse({
-            'partner': partner_name,
+            'partner': decoded_partner_name,
             'items': data,
             'count': len(data)
         })
     except Exception as e:
         print(f"Error getting partner menu items: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
     
     # ==================== ADMIN ORDER VIEWS ====================
