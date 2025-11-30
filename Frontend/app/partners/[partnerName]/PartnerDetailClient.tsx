@@ -17,6 +17,25 @@ interface MenuItem {
 
 export default function PartnerDetailClient({ partnerName }: { partnerName: string }) {
   const router = useRouter();
+  
+  // Add validation and fallback
+  if (!partnerName || partnerName === 'undefined') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-2">Invalid Partner</h1>
+          <p className="text-gray-600">Partner name is missing.</p>
+          <button 
+            onClick={() => router.push('/partners')}
+            className="mt-4 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
+          >
+            Back to Partners
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
   const decodedPartnerName = decodeURIComponent(partnerName);
 
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -27,7 +46,9 @@ export default function PartnerDetailClient({ partnerName }: { partnerName: stri
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
-    loadPartnerItems();
+    if (decodedPartnerName && decodedPartnerName !== 'undefined') {
+      loadPartnerItems();
+    }
   }, [decodedPartnerName]);
 
   const loadPartnerItems = async () => {
