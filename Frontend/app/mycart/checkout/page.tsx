@@ -32,31 +32,56 @@ export default function CheckoutPage() {
   const [tip, setTip] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const loadCheckoutItems = async () => {
-      try {
-        const storedItemIds = sessionStorage.getItem('checkout_item_ids');
-        
-        if (!storedItemIds) {
-          setLoading(false);
-          return;
-        }
-
-        const itemIds = JSON.parse(storedItemIds) as number[];
-        const cartData = await getCart();
-        const selectedCartItems = cartData.cart.filter((item: CartItem) => itemIds.includes(item.id));
-        
-        setSelectedItems(selectedCartItems);
-      } catch (error) {
-        console.error('Error loading checkout items:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCheckoutItems();
+    checkAuthAndLoadCheckout();
   }, []);
+
+  const checkAuthAndLoadCheckout = async () => {
+    try {
+      setLoading(true);
+      
+      // Check if user is logged in
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('user_id');
+      
+      if (!token || !userId) {
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+      
+      setIsAuthenticated(true);
+      await loadCheckoutItems();
+    } catch (error) {
+      console.error('Error:', error);
+      setIsAuthenticated(false);
+      setLoading(false);
+    }
+  };
+
+  const loadCheckoutItems = async () => {
+    try {
+      const storedItemIds = sessionStorage.getItem('checkout_item_ids');
+      
+      if (!storedItemIds) {
+        setLoading(false);
+        return;
+      }
+
+      const itemIds = JSON.parse(storedItemIds) as number[];
+      const cartData = await getCart();
+      const selectedCartItems = cartData.cart.filter((item: CartItem) => itemIds.includes(item.id));
+      
+      setSelectedItems(selectedCartItems);
+    } catch (error) {
+      console.error('Error loading checkout items:', error);
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const total = selectedItems.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
 
@@ -73,7 +98,6 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
 
     try {
-      // ✅ NEW: Get user info from localStorage
       const userStr = localStorage.getItem('user');
       let customerName = 'Guest';
       
@@ -86,12 +110,11 @@ export default function CheckoutPage() {
         }
       }
 
-      // ✅ NEW: Include customer_name in order data
       const response = await createOrder({
         payment_method: selectedPayment,
         tip: tip,
         pickup_time: pickupTime,
-        customer_name: customerName  // ✅ Added this line
+        customer_name: customerName
       });
 
       if (response.success) {
@@ -113,7 +136,38 @@ export default function CheckoutPage() {
     return (
       <main className="min-h-screen p-6">
         <div className="flex items-center justify-center h-96">
-          <p className="text-xl text-gray-600">Loading...</p>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+            <p className="text-xl text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <main className="min-h-screen p-6">
+        <div className="flex items-center mb-6">
+          <Image src="/shopping-cart.png" height={30} width={30} alt="shopping cart icon" />
+          <h1 className="ml-3 text-xl md:text-2xl font-semibold">Checkout</h1>
+        </div>
+
+        <div className="flex flex-col justify-center items-center h-96 text-center">
+          <div className="text-gray-300 mb-4">
+            <svg className="w-32 h-32 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-600 mb-2">Please Log In</h2>
+          <p className="text-gray-500 mb-6">You need to log in to checkout</p>
+          <button
+            onClick={() => router.push('/login')}
+            className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-semibold"
+          >
+            Go to Login
+          </button>
         </div>
       </main>
     );

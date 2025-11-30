@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getCart, updateCartItem, removeFromCart } from "../services/api";
 
@@ -18,24 +19,48 @@ type CartItem = {
 };
 
 export default function CartPage() {
+  const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    fetchCart();
+    checkAuthAndFetchCart();
   }, []);
+
+  const checkAuthAndFetchCart = async () => {
+    try {
+      setLoading(true);
+      
+      // Check if user is logged in
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('user_id');
+      
+      if (!token || !userId) {
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+      
+      setIsAuthenticated(true);
+      await fetchCart();
+    } catch (error) {
+      console.error('Error:', error);
+      setIsAuthenticated(false);
+      setLoading(false);
+    }
+  };
 
   const fetchCart = async () => {
     try {
-      setLoading(true);
       const data = await getCart();
       console.log('Cart fetched:', data);
       setCart(data.cart || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
-      alert('Failed to load cart');
+      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
@@ -106,7 +131,38 @@ export default function CartPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-xl text-gray-600">Loading cart...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-xl text-gray-600">Loading cart...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen p-6">
+        <div className="flex items-center mb-6">
+          <Image src="/shopping-cart.png" height={30} width={30} alt="shopping cart icon" />
+          <h1 className="ml-3 text-2xl font-semibold">Order Summary</h1>
+        </div>
+
+        <div className="flex flex-col justify-center items-center h-96 text-center">
+          <div className="text-gray-300 mb-4">
+            <svg className="w-32 h-32 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-600 mb-2">Please Log In</h2>
+          <p className="text-gray-500 mb-6">You need to log in to view your cart</p>
+          <button
+            onClick={() => router.push('/login')}
+            className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-semibold"
+          >
+            Go to Login
+          </button>
+        </div>
       </div>
     );
   }

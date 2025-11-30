@@ -77,6 +77,18 @@ function ChosenFoodContent() {
   const handleAddToCart = async () => {
     if (!item) return;
     
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('user_id');
+    
+    if (!token || !userId) {
+      showToast('Please log in to add items to cart', "red");
+      setTimeout(() => {
+        router.push('/login');
+      }, 1500);
+      return;
+    }
+    
     try {
       setAddingToCart(true);
       await addToCart(item.id, quantity);
