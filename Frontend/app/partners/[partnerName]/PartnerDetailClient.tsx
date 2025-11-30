@@ -18,13 +18,17 @@ interface MenuItem {
 export default function PartnerDetailClient({ partnerName }: { partnerName: string }) {
   const router = useRouter();
   
+  console.log('PartnerDetailClient received partnerName:', partnerName);
+  console.log('Is undefined?', partnerName === undefined);
+  console.log('Is string "undefined"?', partnerName === 'undefined');
+  
   // Add validation and fallback
   if (!partnerName || partnerName === 'undefined') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-2">Invalid Partner</h1>
-          <p className="text-gray-600">Partner name is missing.</p>
+          <p className="text-gray-600">Partner name is missing: {String(partnerName)}</p>
           <button 
             onClick={() => router.push('/partners')}
             className="mt-4 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
@@ -36,7 +40,11 @@ export default function PartnerDetailClient({ partnerName }: { partnerName: stri
     );
   }
   
-  const decodedPartnerName = decodeURIComponent(partnerName);
+  // Next.js already decodes URL params, so partnerName should be the raw name
+  // like "SpotG" not "SpotG" or "Theatery%20Food%20Hub"
+  const displayName = partnerName;
+  
+  console.log('Display name:', displayName);
 
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,18 +54,18 @@ export default function PartnerDetailClient({ partnerName }: { partnerName: stri
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
-    if (decodedPartnerName && decodedPartnerName !== 'undefined') {
+    if (displayName && displayName !== 'undefined') {
       loadPartnerItems();
     }
-  }, [decodedPartnerName]);
+  }, [displayName]);
 
   const loadPartnerItems = async () => {
     try {
       setLoading(true);
-      console.log('Loading items for partner:', decodedPartnerName);
-      console.log('Encoded partner name:', encodeURIComponent(decodedPartnerName));
+      console.log('Loading items for partner:', displayName);
       
-      const data = await getPartnerMenuItems(decodedPartnerName);
+      // Pass the partner name directly - the API function will encode it
+      const data = await getPartnerMenuItems(displayName);
       console.log('API Response:', data);
       console.log('Items received:', data.items);
       console.log('Number of items:', data.items?.length || 0);
@@ -65,7 +73,7 @@ export default function PartnerDetailClient({ partnerName }: { partnerName: stri
       if (data.items && Array.isArray(data.items)) {
         setItems(data.items);
         if (data.items.length === 0) {
-          console.warn('No items returned for partner:', decodedPartnerName);
+          console.warn('No items returned for partner:', displayName);
         }
       } else {
         console.error('Invalid data structure received:', data);
@@ -73,8 +81,8 @@ export default function PartnerDetailClient({ partnerName }: { partnerName: stri
       }
     } catch (error) {
       console.error('Error loading partner items:', error);
-      console.error('Partner name that failed:', decodedPartnerName);
-      alert(`Failed to load menu items for ${decodedPartnerName}.`);
+      console.error('Partner name that failed:', displayName);
+      alert(`Failed to load menu items for ${displayName}.`);
     } finally {
       setLoading(false);
     }
@@ -173,7 +181,7 @@ export default function PartnerDetailClient({ partnerName }: { partnerName: stri
             <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
             </svg>
-            <h1 className="text-3xl font-bold text-gray-900">{decodedPartnerName}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{displayName}</h1>
           </div>
           <p className="text-gray-600">{items.length} items available</p>
         </div>
@@ -270,7 +278,7 @@ export default function PartnerDetailClient({ partnerName }: { partnerName: stri
               <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
-              <p className="text-gray-500 text-lg">No items found for {decodedPartnerName}.</p>
+              <p className="text-gray-500 text-lg">No items found for {displayName}.</p>
               <p className="text-gray-400 text-sm mt-2">Check the console for debugging information.</p>
             </div>
           )}

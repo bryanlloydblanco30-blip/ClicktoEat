@@ -215,11 +215,29 @@ export async function getFoodPartners() {
 
 // Get menu items for a specific partner
 export async function getPartnerMenuItems(partnerName) {
+  // Validate partner name
+  if (!partnerName || partnerName === 'undefined') {
+    console.error('Invalid partner name:', partnerName);
+    throw new Error('Partner name is required');
+  }
+  
+  // Partner name comes from URL params which Next.js already encodes/decodes properly
+  // So we need to encode it for the API call
   const encodedName = encodeURIComponent(partnerName);
+  
+  console.log('Fetching partner menu for:', partnerName);
+  console.log('Encoded as:', encodedName);
+  console.log('Full URL:', `${API_BASE_URL}/api/partners/${encodedName}/menu/`);
+  
   const response = await fetch(`${API_BASE_URL}/api/partners/${encodedName}/menu/`, {
-    credentials: 'include',  // ADDED
+    credentials: 'include',
   });
-  if (!response.ok) throw new Error('Failed to fetch partner menu');
+  
+  if (!response.ok) {
+    console.error('Failed to fetch partner menu. Status:', response.status);
+    throw new Error('Failed to fetch partner menu');
+  }
+  
   return response.json();
 }
 
