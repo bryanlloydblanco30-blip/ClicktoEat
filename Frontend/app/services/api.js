@@ -102,31 +102,45 @@ export async function signup(username, email, password, role = 'member', foodPar
 }
 
 // Login
+// Update api.js - Login function
 export async function login(username, password) {
-  const response = await fetch(
-    `${ADMIN_API_URL}/api/auth/login/`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ username, password })
+  try {
+    // Use direct backend URL for authentication to get proper cookies
+    const BACKEND_URL = 'https://clickto-eat-rxo1-ip41vktxo-bryans-projects-e4c7e470.vercel.app';
+    
+    const response = await fetch(
+      `${BACKEND_URL}/api/auth/login/`,
+      {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Important for cookies
+        body: JSON.stringify({ username, password })
+      }
+    );
+
+    console.log('Login response status:', response.status);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      console.error('Login error details:', error);
+      throw new Error(error.error || error.message || 'Login failed');
     }
-  );
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || 'Login failed');
+    const data = await response.json();
+    console.log('Login successful:', data);
+
+    if (data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+
+    return data;
+  } catch (err) {
+    console.error('Login exception:', err);
+    throw err;
   }
-
-  const data = await response.json();
-
-  if (data.user) {
-    localStorage.setItem('user', JSON.stringify(data.user));
-  }
-
-  return data;
 }
-
 // Logout
 export async function logout() {
   const response = await apiFetch('/api/auth/logout/', {
