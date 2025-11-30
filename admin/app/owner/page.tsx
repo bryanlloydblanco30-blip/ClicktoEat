@@ -187,9 +187,14 @@ function OwnerContent() {
 
   const handleLogout = () => {
     console.log('👋 Logging out...');
+    // Clear all user data
     localStorage.removeItem('user');
     localStorage.removeItem('food_partner');
-    window.location.href = 'http://localhost:3000/login';
+    localStorage.removeItem('cart_session_id');
+    localStorage.removeItem('session_id');
+    
+    // Redirect and replace history to prevent back button
+    window.location.replace('https://clicktoeat-frontend.onrender.com/login');
   };
 
   // Filter orders based on active tab

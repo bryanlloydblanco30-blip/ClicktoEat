@@ -54,7 +54,7 @@ def signup_view(request):
             full_name=full_name,    # NEW
             sr_code=sr_code         # NEW
         )
-        
+ 
         # Log the user in
         login(request, user)
         
@@ -824,15 +824,15 @@ def get_partner_orders(request):
             
             orders_data.append({
                 'id': order.id,
-                'total': str(partner_total),  # Only this partner's items
+                'total': str(partner_total),
                 'tip': str(order.tip_amount),
                 'payment_method': order.payment_method,
                 'pickup_date': order.pickup_date.isoformat(),
                 'pickup_time': order.pickup_time.isoformat(),
                 'status': order.status,
                 'created_at': order.created_at.isoformat(),
-                'customer_name': f'Customer #{order.session_id[:8]}',
-                'items': items_data  # Only items from this partner
+                'customer_name': order.customer_name if order.customer_name else f'Customer #{order.session_id[:8]}',  # FIXED
+                'items': items_data
             })
         
         return JsonResponse({
