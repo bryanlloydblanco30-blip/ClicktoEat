@@ -103,7 +103,9 @@ CORS_ALLOWED_ORIGINS = [
     # Production URLs - DOMAINS ONLY, NO PATHS
     "https://clicktoeat-pw67.onrender.com",
     "https://clicktoeat-frontend.onrender.com",
-    "https://clicktoeat-admin.onrender.com", 
+    "https://clicktoeat-admin.onrender.com",
+    "https://clickto-eat-rxo1.vercel.app",
+    "https://clickto-eat-rxo1-41618asb3-bryans-projects-e4c7e470.vercel.app",
     "https://clickto-eat-rxo1-ipppgapnc-bryans-projects-e4c7e470.vercel.app",
     
     # Vercel deployment
@@ -143,6 +145,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://clicktoeat-admin.onrender.com",
     
     # Vercel deployment
+    "https://clickto-eat-rxo1.vercel.app",
+    "https://clickto-eat-rxo1-41618asb3-bryans-projects-e4c7e470.vercel.app",
     "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
     "https://clickto-eat-rxo1-ipppgapnc-bryans-projects-e4c7e470.vercel.app",
     
@@ -248,16 +252,23 @@ CORS_ALLOWED_ORIGINS = [
     # Production URLs - DOMAINS ONLY, NO PATHS
     "https://clicktoeat-pw67.onrender.com",
     "https://clicktoeat-frontend.onrender.com",
-    "https://clicktoeat-admin.onrender.com", 
-    "https://clickto-eat-rxo1-ipppgapnc-bryans-projects-e4c7e470.vercel.app",
+    "https://clicktoeat-admin.onrender.com",
     
-    # Vercel deployment
+    # Vercel deployments - Current active URLs
+    "https://clickto-laddk59ty-bryans-projects-e4c7e470.vercel.app",  # ✅ Frontend
+    "https://clickto-eat-rxo1-ip41vktxo-bryans-projects-e4c7e470.vercel.app",  # ✅ Admin
+    
+    # Other Vercel deployments
+    "https://clickto-eat.vercel.app",
+    "https://clickto-eat-rxo1.vercel.app",
+    "https://clickto-eat-rxo1-41618asb3-bryans-projects-e4c7e470.vercel.app",
+    "https://clickto-eat-rxo1-ipppgapnc-bryans-projects-e4c7e470.vercel.app",
     "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
     
     # Development URLs
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:3001",  # Admin app local
+    "http://localhost:3001",
     "http://127.0.0.1:3001",
 ]
 
@@ -265,6 +276,8 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.vercel\.app$",
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -285,7 +298,13 @@ CSRF_TRUSTED_ORIGINS = [
     "https://clicktoeat-frontend.onrender.com",
     "https://clicktoeat-admin.onrender.com",
     
-    # Vercel deployment
+    # Vercel deployments - Current active URLs
+    "https://clickto-laddk59ty-bryans-projects-e4c7e470.vercel.app",  # ✅ Frontend
+    "https://clickto-eat-rxo1-ip41vktxo-bryans-projects-e4c7e470.vercel.app",  # ✅ Admin
+    
+    # Other Vercel deployments
+    "https://clickto-eat.vercel.app",
+    "https://clickto-eat-rxo1.vercel.app",
     "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
     "https://clickto-eat-rxo1-ipppgapnc-bryans-projects-e4c7e470.vercel.app",
     
