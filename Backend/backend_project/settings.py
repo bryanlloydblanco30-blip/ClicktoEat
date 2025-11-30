@@ -26,7 +26,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # Must be high up
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -87,41 +87,60 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS Settings - Updated for both development and production
+# CORS Settings - FIXED: Removed paths from origins
 CORS_ALLOWED_ORIGINS = [
-    # Production URLs
+    # Production URLs - DOMAINS ONLY, NO PATHS
     "https://clicktoeat-pw67.onrender.com",
     "https://clicktoeat-frontend.onrender.com",
-    # Vercel deployment - ADD THIS
+    "https://clicktoeat-admin.onrender.com",  # ✅ Fixed - removed /products and /orders
+    
+    # Vercel deployment
     "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
-    "https://clicktoeat-admin.onrender.com",
-    "https://clicktoeat-admin.onrender.com/products",
-    "https://clicktoeat-admin.onrender.com/orders",
     
     # Development URLs
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",  # Admin app local
+    "http://127.0.0.1:3001",
+]
+
+# Allow all Vercel preview deployments (including future ones)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # CSRF Settings - Updated for both development and production
 CSRF_TRUSTED_ORIGINS = [
     # Production URLs
     "https://clicktoeat-pw67.onrender.com",
     "https://clicktoeat-frontend.onrender.com",
-    # Vercel deployment - ADD THIS
+    "https://clicktoeat-admin.onrender.com",
+    
+    # Vercel deployment
     "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
+    
     # Development URLs
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
 ]
-# Allow all Vercel preview deployments (including future ones)
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.vercel\.app$",
-]
+
 # Session and CSRF Cookie Settings
-# For development (localhost)
 if DEBUG:
     # Development settings
     SESSION_COOKIE_SAMESITE = 'Lax'
@@ -137,16 +156,3 @@ else:
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False
-
-
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
