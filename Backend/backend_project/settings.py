@@ -87,13 +87,24 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS Settings - FIXED: Removed paths from origins
+# ==================== AUTHENTICATION SETTINGS ====================
+# CRITICAL FIX: Prevent automatic redirects after login/logout
+# These settings tell Django NOT to redirect after authentication
+LOGIN_URL = '/api/auth/login/'  # Where to go if login required (not used by API)
+LOGIN_REDIRECT_URL = None  # ✅ CRITICAL: Don't redirect after login!
+LOGOUT_REDIRECT_URL = None  # ✅ CRITICAL: Don't redirect after logout!
+
+# Alternative: Comment out entirely (same effect)
+# LOGIN_REDIRECT_URL = '/'  # If you must set it, use '/' not '/admin/'
+# LOGOUT_REDIRECT_URL = '/'
+
+# ==================== CORS SETTINGS ====================
 CORS_ALLOWED_ORIGINS = [
     # Production URLs - DOMAINS ONLY, NO PATHS
     "https://clicktoeat-pw67.onrender.com",
     "https://clicktoeat-frontend.onrender.com",
     "https://clicktoeat-admin.onrender.com", 
-    "https://clickto-eat-rxo1-ipppgapnc-bryans-projects-e4c7e470.vercel.app",# ✅ Fixed - removed /products and /orders
+    "https://clickto-eat-rxo1-ipppgapnc-bryans-projects-e4c7e470.vercel.app",
     
     # Vercel deployment
     "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
@@ -124,7 +135,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-# CSRF Settings - Updated for both development and production
+# ==================== CSRF SETTINGS ====================
 CSRF_TRUSTED_ORIGINS = [
     # Production URLs
     "https://clicktoeat-pw67.onrender.com",
@@ -133,6 +144,7 @@ CSRF_TRUSTED_ORIGINS = [
     
     # Vercel deployment
     "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
+    "https://clickto-eat-rxo1-ipppgapnc-bryans-projects-e4c7e470.vercel.app",
     
     # Development URLs
     "http://localhost:3000",
@@ -141,7 +153,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3001",
 ]
 
-# Session and CSRF Cookie Settings
+# ==================== SESSION AND COOKIE SETTINGS ====================
 if DEBUG:
     # Development settings
     SESSION_COOKIE_SAMESITE = 'Lax'
@@ -157,3 +169,20 @@ else:
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False
+
+# Session configuration
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store sessions in database
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_SAVE_EVERY_REQUEST = False  # Only save when modified
+SESSION_COOKIE_NAME = 'sessionid'
+
+# ==================== REST FRAMEWORK SETTINGS ====================
+# Optional but recommended for API-based apps
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',  # Adjust based on your needs
+    ],
+}

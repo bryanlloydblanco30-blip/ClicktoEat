@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { getCart, updateCartItem, removeFromCart } from "../services/api";
+import { getCart, updateCartItem, removeFromCart, checkAuth } from "../services/api";
 
 type CartItem = {
   id: number;
@@ -34,24 +34,23 @@ export default function CartPage() {
     try {
       setLoading(true);
       
-      // Check authentication with Django backend
-      const response = await fetch('http://localhost:8000/api/auth/check/', {
-        credentials: 'include', // Important: includes cookies
-      });
+      // Check authentication using your API service
+      const authData = await checkAuth();
+      console.log('Auth check response:', authData);
       
-      const data = await response.json();
-      console.log('Auth check response:', data);
-      
-      if (!data.authenticated) {
+      if (!authData.authenticated) {
+        console.log('User not authenticated');
         setIsAuthenticated(false);
         setLoading(false);
         return;
       }
       
+      console.log('User authenticated:', authData.user);
       setIsAuthenticated(true);
       await fetchCart();
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Auth check error:', error);
+      // If auth check fails, user might not be logged in
       setIsAuthenticated(false);
       setLoading(false);
     }
@@ -64,7 +63,6 @@ export default function CartPage() {
       setCart(data.cart || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
-      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
@@ -134,10 +132,15 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-xl text-gray-600">Loading cart...</p>
+      <div className="min-h-screen p-6">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-red-600 border-t-transparent absolute top-0 left-1/2 -translate-x-1/2"></div>
+            </div>
+            <p className="text-xl text-gray-600 font-medium">Loading cart...</p>
+          </div>
         </div>
       </div>
     );
@@ -153,16 +156,16 @@ export default function CartPage() {
         </div>
 
         <div className="flex flex-col justify-center items-center h-96 text-center">
-          <div className="text-gray-300 mb-4">
-            <svg className="w-32 h-32 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          <div className="bg-red-100 rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-6">
+            <svg className="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-600 mb-2">Please Log In</h2>
-          <p className="text-gray-500 mb-6">You need to log in to view your cart</p>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Please Log In</h2>
+          <p className="text-gray-600 mb-6">You need to log in to view your cart</p>
           <button
             onClick={() => router.push('/login')}
-            className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-semibold"
+            className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-semibold shadow-lg"
           >
             Go to Login
           </button>
@@ -172,7 +175,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 p-6">
       <div className="flex items-center mb-6">
         <Image src="/shopping-cart.png" height={30} width={30} alt="shopping cart icon" />
         <h1 className="ml-3 text-2xl font-semibold">Order Summary</h1>
@@ -188,7 +191,7 @@ export default function CartPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 50 }}
                 transition={{ duration: 0.3 }}
-                className="flex items-center gap-4 p-4 rounded-lg shadow-sm bg-white border border-gray-100"
+                className="flex items-center gap-4 p-4 rounded-lg shadow-sm bg-white border border-gray-100 hover:shadow-md transition"
               >
                 <input
                   type="checkbox"
@@ -208,7 +211,7 @@ export default function CartPage() {
                     <h2 className="font-semibold text-lg truncate">{item.name}</h2>
                     <button 
                       onClick={() => handleRemoveItem(item)} 
-                      className="cursor-pointer hover:opacity-70 flex-shrink-0"
+                      className="cursor-pointer hover:opacity-70 flex-shrink-0 transition"
                     >
                       <Image src='/trash.png' alt='trash icon' width={24} height={24} />
                     </button>
@@ -256,7 +259,7 @@ export default function CartPage() {
           <h2 className="text-2xl font-semibold mt-4 text-gray-600">Your cart is empty</h2>
           <Link
             href="/"
-            className="mt-6 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+            className="mt-6 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
           >
             Back to Menu
           </Link>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getOrders } from "../services/api";
+import { getOrders, checkAuth } from "../services/api";
 import { motion } from "framer-motion";
 
 type OrderItem = {
@@ -39,20 +39,22 @@ export default function HistoryPage() {
     try {
       setLoading(true);
       
-      // Check if user is logged in by checking localStorage
-      const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('user_id');
+      // Check authentication using your API service
+      const authData = await checkAuth();
+      console.log('Auth check response:', authData);
       
-      if (!token || !userId) {
+      if (!authData.authenticated) {
+        console.log('User not authenticated');
         setIsAuthenticated(false);
         setLoading(false);
         return;
       }
       
+      console.log('User authenticated:', authData.user);
       setIsAuthenticated(true);
       await fetchOrders();
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Auth check error:', error);
       setIsAuthenticated(false);
       setLoading(false);
     }
@@ -65,8 +67,6 @@ export default function HistoryPage() {
       setOrders(data.orders || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
-      // If error is 401 (unauthorized), user is not authenticated
-      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
@@ -107,8 +107,11 @@ export default function HistoryPage() {
       <div className="min-h-screen p-6">
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-xl text-gray-600">Loading order history...</p>
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-red-600 border-t-transparent absolute top-0 left-1/2 -translate-x-1/2"></div>
+            </div>
+            <p className="text-xl text-gray-600 font-medium">Loading order history...</p>
           </div>
         </div>
       </div>
@@ -127,16 +130,16 @@ export default function HistoryPage() {
         </div>
 
         <div className="flex flex-col justify-center items-center h-96 text-center">
-          <div className="text-gray-300 mb-4">
-            <svg className="w-32 h-32 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          <div className="bg-red-100 rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-6">
+            <svg className="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-600 mb-2">Please Log In</h2>
-          <p className="text-gray-500 mb-6">You need to log in to view your order history</p>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Please Log In</h2>
+          <p className="text-gray-600 mb-6">You need to log in to view your order history</p>
           <button
             onClick={() => router.push('/login')}
-            className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-semibold"
+            className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-semibold shadow-lg"
           >
             Go to Login
           </button>
@@ -155,62 +158,64 @@ export default function HistoryPage() {
       </div>
 
       {orders.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-4 max-w-4xl mx-auto">
           {orders.map((order) => (
             <motion.div
               key={order.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+              className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition"
             >
               {/* Order Header */}
               <div 
-                className="p-4 cursor-pointer hover:bg-gray-50 transition"
+                className="p-5 cursor-pointer hover:bg-gray-50 transition"
                 onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
               >
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h2 className="font-bold text-lg">Order #{order.id}</h2>
-                    <p className="text-sm text-gray-600">
+                    <h2 className="font-bold text-xl text-gray-900">Order #{order.id}</h2>
+                    <p className="text-sm text-gray-600 mt-1">
                       {formatDate(order.created_at)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-xl text-red-600">₱{parseFloat(order.total).toFixed(2)}</p>
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(order.status)}`}>
+                    <p className="font-bold text-2xl text-red-600">₱{parseFloat(order.total).toFixed(2)}</p>
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border mt-2 ${getStatusColor(order.status)}`}>
                       {order.status.toUpperCase()}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex gap-4 text-sm text-gray-600 flex-wrap">
-                  <div className="flex items-center gap-1">
+                <div className="flex gap-4 text-sm text-gray-600 flex-wrap mb-2">
+                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg">
                     <span>📅</span>
                     <span>Pickup: {formatDate(order.pickup_date)}</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg">
                     <span>🕐</span>
                     <span>{formatTime(order.pickup_time)}</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg">
                     <span>💳</span>
                     <span className="capitalize">{order.payment_method}</span>
                   </div>
                 </div>
 
-                <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
-                  <span>{order.items.length} item(s)</span>
+                <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
+                  <span className="font-medium">{order.items.length} item(s)</span>
                   <span>•</span>
-                  <span>Click to {expandedOrder === order.id ? 'hide' : 'view'} details</span>
-                  <svg 
-                    className={`w-4 h-4 transition-transform ${expandedOrder === order.id ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <span className="flex items-center gap-1">
+                    {expandedOrder === order.id ? 'Hide' : 'View'} details
+                    <svg 
+                      className={`w-4 h-4 transition-transform ${expandedOrder === order.id ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </span>
                 </div>
               </div>
 
@@ -223,31 +228,31 @@ export default function HistoryPage() {
                   transition={{ duration: 0.3 }}
                   className="border-t border-gray-200 bg-gray-50"
                 >
-                  <div className="p-4 space-y-3">
-                    <h3 className="font-semibold text-sm text-gray-700 mb-2">Order Items:</h3>
+                  <div className="p-5 space-y-3">
+                    <h3 className="font-semibold text-base text-gray-800 mb-3">Order Items:</h3>
                     {order.items.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                      <div key={index} className="flex justify-between items-center py-3 px-4 bg-white rounded-lg border border-gray-100">
                         <div>
-                          <p className="font-medium">{item.name}</p>
-                          <p className="text-sm text-gray-600">{item.quantity} x ₱{parseFloat(item.price).toFixed(2)}</p>
+                          <p className="font-medium text-gray-900">{item.name}</p>
+                          <p className="text-sm text-gray-600 mt-1">{item.quantity} x ₱{parseFloat(item.price).toFixed(2)}</p>
                         </div>
-                        <p className="font-semibold text-red-600">₱{parseFloat(item.subtotal).toFixed(2)}</p>
+                        <p className="font-semibold text-red-600 text-lg">₱{parseFloat(item.subtotal).toFixed(2)}</p>
                       </div>
                     ))}
                     
-                    <div className="pt-3 border-t border-gray-300 space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Subtotal:</span>
-                        <span>₱{(parseFloat(order.total) - parseFloat(order.tip)).toFixed(2)}</span>
+                    <div className="pt-4 border-t border-gray-300 space-y-2 bg-white rounded-lg p-4 mt-4">
+                      <div className="flex justify-between text-sm text-gray-700">
+                        <span>Subtotal:</span>
+                        <span className="font-medium">₱{(parseFloat(order.total) - parseFloat(order.tip)).toFixed(2)}</span>
                       </div>
                       {parseFloat(order.tip) > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Tip:</span>
-                          <span>₱{parseFloat(order.tip).toFixed(2)}</span>
+                        <div className="flex justify-between text-sm text-gray-700">
+                          <span>Tip:</span>
+                          <span className="font-medium">₱{parseFloat(order.tip).toFixed(2)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                        <span>Total:</span>
+                      <div className="flex justify-between font-bold text-lg pt-3 border-t border-gray-200">
+                        <span className="text-gray-900">Total:</span>
                         <span className="text-red-600">₱{parseFloat(order.total).toFixed(2)}</span>
                       </div>
                     </div>
@@ -259,13 +264,19 @@ export default function HistoryPage() {
         </div>
       ) : (
         <div className="flex flex-col justify-center items-center h-96 text-center">
-          <div className="text-gray-300 mb-4">
-            <svg className="w-32 h-32 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gray-100 rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-6">
+            <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-600">No order history</h2>
-          <p className="text-gray-500 mt-2">Your past orders will appear here</p>
+          <h2 className="text-2xl font-semibold text-gray-700">No order history</h2>
+          <p className="text-gray-500 mt-2 mb-6">Your past orders will appear here</p>
+          <button
+            onClick={() => router.push('/')}
+            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition font-semibold"
+          >
+            Browse Menu
+          </button>
         </div>
       )}
     </div>
