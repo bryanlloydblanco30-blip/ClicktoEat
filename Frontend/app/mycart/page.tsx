@@ -34,11 +34,15 @@ export default function CartPage() {
     try {
       setLoading(true);
       
-      // Check if user is logged in
-      const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('user_id');
+      // Check authentication with Django backend
+      const response = await fetch('http://localhost:8000/api/auth/check/', {
+        credentials: 'include', // Important: includes cookies
+      });
       
-      if (!token || !userId) {
+      const data = await response.json();
+      console.log('Auth check response:', data);
+      
+      if (!data.authenticated) {
         setIsAuthenticated(false);
         setLoading(false);
         return;

@@ -42,11 +42,16 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
       
-      // Check if user is logged in
-      const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('user_id');
+      // Check if user is logged in - check multiple possible keys
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token');
+      const userId = localStorage.getItem('user_id') || localStorage.getItem('userId');
+      const user = localStorage.getItem('user');
       
-      if (!token || !userId) {
+      // Debug: log what's in localStorage
+      console.log('Auth check:', { token: !!token, userId: !!userId, user: !!user });
+      console.log('localStorage keys:', Object.keys(localStorage));
+      
+      if (!token && !user) {
         setIsAuthenticated(false);
         setLoading(false);
         return;

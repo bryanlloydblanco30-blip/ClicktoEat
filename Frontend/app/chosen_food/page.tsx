@@ -77,19 +77,23 @@ function ChosenFoodContent() {
   const handleAddToCart = async () => {
     if (!item) return;
     
-    // Check if user is logged in
-    const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('user_id');
-    
-    if (!token || !userId) {
-      showToast('Please log in to add items to cart', "red");
-      setTimeout(() => {
-        router.push('/login');
-      }, 1500);
-      return;
-    }
-    
     try {
+      // Check authentication with Django backend
+      const authResponse = await fetch('http://localhost:8000/api/auth/check/', {
+        credentials: 'include',
+      });
+      
+      const authData = await authResponse.json();
+      console.log('Auth check:', authData);
+      
+      if (!authData.authenticated) {
+        showToast('Please log in to add items to cart', "red");
+        setTimeout(() => {
+          router.push('/login');
+        }, 1500);
+        return;
+      }
+      
       setAddingToCart(true);
       await addToCart(item.id, quantity);
       window.dispatchEvent(new Event('cartUpdated'));

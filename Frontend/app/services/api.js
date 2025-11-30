@@ -5,7 +5,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 // Get cart
 export async function getCart() {
   const sessionId = getSessionId();
-  const response = await fetch(`${API_BASE_URL}/api/cart/?session_id=${sessionId}`);
+  const response = await fetch(`${API_BASE_URL}/api/cart/?session_id=${sessionId}`, {
+    credentials: 'include',  // ADDED
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch cart');
   }
@@ -17,6 +19,7 @@ export async function addToCart(menuItemId, quantity = 1) {
   const response = await fetch(`${API_BASE_URL}/api/cart/add/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',  // ADDED
     body: JSON.stringify({
       menu_item_id: menuItemId,
       quantity: quantity,
@@ -34,6 +37,7 @@ export async function updateCartItem(itemId, quantity) {
   const response = await fetch(`${API_BASE_URL}/api/cart/update/${itemId}/`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',  // ADDED
     body: JSON.stringify({ quantity })
   });
   if (!response.ok) {
@@ -46,6 +50,7 @@ export async function updateCartItem(itemId, quantity) {
 export async function removeFromCart(itemId) {
   const response = await fetch(`${API_BASE_URL}/api/cart/remove/${itemId}/`, {
     method: 'DELETE',
+    credentials: 'include',  // ADDED
   });
   if (!response.ok) {
     throw new Error('Failed to remove from cart');
@@ -60,6 +65,7 @@ export async function addFavorite(menuItemId) {
   const response = await fetch(`${API_BASE_URL}/api/favorites/add/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',  // ADDED
     body: JSON.stringify({
       menu_item_id: menuItemId,
       session_id: getSessionId()
@@ -76,7 +82,10 @@ export async function removeFavorite(menuItemId) {
   const sessionId = getSessionId();
   const response = await fetch(
     `${API_BASE_URL}/api/favorites/remove/?session_id=${sessionId}&menu_item_id=${menuItemId}`,
-    { method: 'DELETE' }
+    { 
+      method: 'DELETE',
+      credentials: 'include',  // ADDED
+    }
   );
   if (!response.ok) {
     throw new Error('Failed to remove from favorites');
@@ -87,7 +96,9 @@ export async function removeFavorite(menuItemId) {
 // Get all favorites
 export async function getFavorites() {
   const sessionId = getSessionId();
-  const response = await fetch(`${API_BASE_URL}/api/favorites/?session_id=${sessionId}`);
+  const response = await fetch(`${API_BASE_URL}/api/favorites/?session_id=${sessionId}`, {
+    credentials: 'include',  // ADDED
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch favorites');
   }
@@ -97,7 +108,9 @@ export async function getFavorites() {
 // Get favorite IDs (for quick checking if item is favorited)
 export async function getFavoriteIds() {
   const sessionId = getSessionId();
-  const response = await fetch(`${API_BASE_URL}/api/favorites/ids/?session_id=${sessionId}`);
+  const response = await fetch(`${API_BASE_URL}/api/favorites/ids/?session_id=${sessionId}`, {
+    credentials: 'include',  // ADDED
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch favorite IDs');
   }
@@ -111,6 +124,7 @@ export async function createOrder(orderData) {
   const response = await fetch(`${API_BASE_URL}/api/orders/create/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',  // ADDED
     body: JSON.stringify({
       ...orderData,
       session_id: getSessionId()
@@ -126,7 +140,9 @@ export async function createOrder(orderData) {
 // Get orders
 export async function getOrders() {
   const sessionId = getSessionId();
-  const response = await fetch(`${API_BASE_URL}/api/orders/?session_id=${sessionId}`);
+  const response = await fetch(`${API_BASE_URL}/api/orders/?session_id=${sessionId}`, {
+    credentials: 'include',  // ADDED
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch orders');
   }
@@ -137,7 +153,9 @@ export async function getOrders() {
 
 // Get all menu items (Admin - includes unavailable items)
 export async function getAllMenuItemsAdmin() {
-  const response = await fetch(`${API_BASE_URL}/api/admin/menu/`);
+  const response = await fetch(`${API_BASE_URL}/api/admin/menu/`, {
+    credentials: 'include',  // ADDED
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch admin menu items');
   }
@@ -149,6 +167,7 @@ export async function createMenuItem(itemData) {
   const response = await fetch(`${API_BASE_URL}/api/admin/menu/create/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',  // ADDED
     body: JSON.stringify(itemData)
   });
   if (!response.ok) {
@@ -162,6 +181,7 @@ export async function updateMenuItem(itemId, itemData) {
   const response = await fetch(`${API_BASE_URL}/api/admin/menu/update/${itemId}/`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',  // ADDED
     body: JSON.stringify(itemData)
   });
   if (!response.ok) {
@@ -174,6 +194,7 @@ export async function updateMenuItem(itemId, itemData) {
 export async function deleteMenuItem(itemId) {
   const response = await fetch(`${API_BASE_URL}/api/admin/menu/delete/${itemId}/`, {
     method: 'DELETE',
+    credentials: 'include',  // ADDED
   });
   if (!response.ok) {
     throw new Error('Failed to delete menu item');
@@ -185,7 +206,9 @@ export async function deleteMenuItem(itemId) {
 
 // Get all food partners
 export async function getFoodPartners() {
-  const response = await fetch(`${API_BASE_URL}/api/partners/`);
+  const response = await fetch(`${API_BASE_URL}/api/partners/`, {
+    credentials: 'include',  // ADDED
+  });
   if (!response.ok) throw new Error('Failed to fetch partners');
   return response.json();
 }
@@ -193,7 +216,9 @@ export async function getFoodPartners() {
 // Get menu items for a specific partner
 export async function getPartnerMenuItems(partnerName) {
   const encodedName = encodeURIComponent(partnerName);
-  const response = await fetch(`${API_BASE_URL}/api/partners/${encodedName}/menu/`);
+  const response = await fetch(`${API_BASE_URL}/api/partners/${encodedName}/menu/`, {
+    credentials: 'include',  // ADDED
+  });
   if (!response.ok) throw new Error('Failed to fetch partner menu');
   return response.json();
 }
@@ -202,7 +227,9 @@ export async function getPartnerMenuItems(partnerName) {
 
 // Get all orders (Admin)
 export async function getAllOrders() {
-  const response = await fetch(`${API_BASE_URL}/api/admin/orders/`);
+  const response = await fetch(`${API_BASE_URL}/api/admin/orders/`, {
+    credentials: 'include',  // ADDED
+  });
   if (!response.ok) throw new Error('Failed to fetch orders');
   return response.json();
 }
@@ -212,6 +239,7 @@ export async function updateOrderStatus(orderId, status) {
   const response = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/status/`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',  // ADDED
     body: JSON.stringify({ status })
   });
   if (!response.ok) throw new Error('Failed to update order status');
@@ -221,8 +249,6 @@ export async function updateOrderStatus(orderId, status) {
 // ==================== AUTHENTICATION FUNCTIONS ====================
 
 // Signup
-// Updated signup function in services/api.js
-
 export async function signup(username, email, password, role = 'member', foodPartner = '', fullName = '', srCode = '') {
   const response = await fetch(`${API_BASE_URL}/api/auth/signup/`, {
     method: 'POST',
@@ -234,8 +260,8 @@ export async function signup(username, email, password, role = 'member', foodPar
       password,
       role,
       food_partner: foodPartner,
-      full_name: fullName,    // NEW
-      sr_code: srCode         // NEW
+      full_name: fullName,
+      sr_code: srCode
     })
   });
   
@@ -245,6 +271,7 @@ export async function signup(username, email, password, role = 'member', foodPar
   }
   return response.json();
 }
+
 // Login
 export async function login(username, password) {
   const response = await fetch(`${API_BASE_URL}/api/auth/login/`, {
@@ -293,8 +320,13 @@ export function getCurrentUser() {
 }
 
 // Helper function to check if user is authenticated
-export function isAuthenticated() {
-  return getCurrentUser() !== null;
+export async function isAuthenticated() {
+  try {
+    const data = await checkAuth();
+    return data.authenticated;
+  } catch (error) {
+    return false;
+  }
 }
 
 // Helper function to check user role
@@ -307,7 +339,9 @@ export function hasRole(role) {
 
 // Get all available menu items
 export async function getMenuItems() {
-  const response = await fetch(`${API_BASE_URL}/api/menu/`);
+  const response = await fetch(`${API_BASE_URL}/api/menu/`, {
+    credentials: 'include',  // ADDED
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch menu items');
   }
