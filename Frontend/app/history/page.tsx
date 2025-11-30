@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { getOrders } from "../services/api";
 import { motion } from "framer-motion";
 
@@ -24,22 +25,48 @@ type Order = {
 };
 
 export default function HistoryPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    fetchOrders();
+    checkAuthAndFetchOrders();
   }, []);
+
+  const checkAuthAndFetchOrders = async () => {
+    try {
+      setLoading(true);
+      
+      // Check if user is logged in by checking localStorage
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('user_id');
+      
+      if (!token || !userId) {
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+      
+      setIsAuthenticated(true);
+      await fetchOrders();
+    } catch (error) {
+      console.error('Error:', error);
+      setIsAuthenticated(false);
+      setLoading(false);
+    }
+  };
 
   const fetchOrders = async () => {
     try {
-      setLoading(true);
       const data = await getOrders();
       console.log('Orders fetched:', data);
       setOrders(data.orders || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      // If error is 401 (unauthorized), user is not authenticated
+      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
@@ -83,6 +110,36 @@ export default function HistoryPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
             <p className="text-xl text-gray-600">Loading order history...</p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen p-6">
+        <div className="flex items-center mb-6">
+          <svg className="w-8 h-8 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h1 className="text-2xl font-semibold">Order History</h1>
+        </div>
+
+        <div className="flex flex-col justify-center items-center h-96 text-center">
+          <div className="text-gray-300 mb-4">
+            <svg className="w-32 h-32 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-600 mb-2">Please Log In</h2>
+          <p className="text-gray-500 mb-6">You need to log in to view your order history</p>
+          <button
+            onClick={() => router.push('/login')}
+            className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-semibold"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     );

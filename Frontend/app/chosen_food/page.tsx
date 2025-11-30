@@ -27,6 +27,28 @@ function ChosenFoodContent() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
+  const showToast = (message: string, color: string) => {
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: ${color};
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      font-weight: 500;
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  };
+
   useEffect(() => {
     if (id) {
       loadMenuItem(id);
@@ -58,12 +80,18 @@ function ChosenFoodContent() {
     try {
       setAddingToCart(true);
       await addToCart(item.id, quantity);
-      alert(`✓ ${quantity}x ${item.name} added to cart!`);
       window.dispatchEvent(new Event('cartUpdated'));
+      
+      setAddingToCart(false);
+      showToast(`${quantity}x ${item.name} added to cart successfully!`, "green");
+      
+      // Redirect after showing toast
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('Failed to add to cart');
-    } finally {
+      showToast('Failed to add to cart', "red");
       setAddingToCart(false);
     }
   };
