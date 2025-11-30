@@ -83,30 +83,45 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS settings
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
-SESSION_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SAMESITE = 'None'
-CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
-
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-
-# CSRF Settings for Render
-CSRF_TRUSTED_ORIGINS = [
-    "https://clicktoeat-pw67.onrender.com",
-    # Add your frontend URL if it's separate
-    "https://clicktoeat-frontend.onrender.com",  
-]
-
-# CORS Settings
+# CORS Settings - Updated for both development and production
 CORS_ALLOWED_ORIGINS = [
+    # Production URLs
     "https://clicktoeat-pw67.onrender.com",
-    "https://clicktoeat-frontend.onrender.com",  # Your frontend URL
+    "https://clicktoeat-frontend.onrender.com",
+    # Development URLs - ADD THESE
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Settings - Updated for both development and production
+CSRF_TRUSTED_ORIGINS = [
+    # Production URLs
+    "https://clicktoeat-pw67.onrender.com",
+    "https://clicktoeat-frontend.onrender.com",
+    # Development URLs - ADD THESE
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# Session and CSRF Cookie Settings
+# For development (localhost)
+if DEBUG:
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+else:
+    # For production (HTTPS)
+    SESSION_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
