@@ -25,6 +25,7 @@ export default function CartPage() {
   const [selectAll, setSelectAll] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthAndFetchCart();
@@ -33,38 +34,49 @@ export default function CartPage() {
   const checkAuthAndFetchCart = async () => {
     try {
       setLoading(true);
+      setAuthError(null);
       
-      // Check authentication using your API service
+      console.log('🔍 Starting auth check...');
       const authData = await checkAuth();
-      console.log('Auth check response:', authData);
+      console.log('✅ Auth response:', authData);
       
-      if (!authData.authenticated) {
-        console.log('User not authenticated');
+      // Check if response has the expected structure
+      if (authData && authData.authenticated === true) {
+        console.log('✅ User authenticated:', authData.user);
+        setIsAuthenticated(true);
+        await fetchCart();
+      } else {
+        console.log('❌ User not authenticated. Response:', authData);
         setIsAuthenticated(false);
-        setLoading(false);
-        return;
+        setAuthError('Not authenticated');
       }
-      
-      console.log('User authenticated:', authData.user);
-      setIsAuthenticated(true);
-      await fetchCart();
     } catch (error) {
-      console.error('Auth check error:', error);
-      // If auth check fails, user might not be logged in
+      console.error('❌ Auth check error:', error);
       setIsAuthenticated(false);
+      setAuthError(error instanceof Error ? error.message : 'Authentication failed');
+    } finally {
       setLoading(false);
     }
   };
 
   const fetchCart = async () => {
     try {
+      console.log('🛒 Fetching cart...');
       const data = await getCart();
-      console.log('Cart fetched:', data);
-      setCart(data.cart || []);
+      console.log('✅ Cart fetched:', data);
+      
+      if (data && data.cart) {
+        setCart(data.cart);
+      } else {
+        console.warn('⚠️ Unexpected cart response format:', data);
+        setCart([]);
+      }
     } catch (error) {
-      console.error('Error fetching cart:', error);
-    } finally {
-      setLoading(false);
+      console.error('❌ Error fetching cart:', error);
+      // If cart fetch fails due to auth, update auth state
+      if (error instanceof Error && error.message.includes('401')) {
+        setIsAuthenticated(false);
+      }
     }
   };
 
@@ -162,13 +174,24 @@ export default function CartPage() {
             </svg>
           </div>
           <h2 className="text-2xl font-semibold text-gray-900 mb-2">Please Log In</h2>
-          <p className="text-gray-600 mb-6">You need to log in to view your cart</p>
-          <button
-            onClick={() => router.push('/login')}
-            className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-semibold shadow-lg"
-          >
-            Go to Login
-          </button>
+          <p className="text-gray-600 mb-2">You need to log in to view your cart</p>
+          {authError && (
+            <p className="text-sm text-red-600 mb-4">Debug: {authError}</p>
+          )}
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push('/login')}
+              className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-semibold shadow-lg"
+            >
+              Go to Login
+            </button>
+            <button
+              onClick={checkAuthAndFetchCart}
+              className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition font-semibold"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );

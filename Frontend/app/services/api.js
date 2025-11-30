@@ -1,269 +1,5 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-// ==================== CART FUNCTIONS ====================
-
-// Get cart
-export async function getCart() {
-  const sessionId = getSessionId();
-  const response = await fetch(`${API_BASE_URL}/api/cart/?session_id=${sessionId}`, {
-    credentials: 'include',  // ADDED
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch cart');
-  }
-  return response.json();
-}
-
-// Add to cart
-export async function addToCart(menuItemId, quantity = 1) {
-  const response = await fetch(`${API_BASE_URL}/api/cart/add/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',  // ADDED
-    body: JSON.stringify({
-      menu_item_id: menuItemId,
-      quantity: quantity,
-      session_id: getSessionId()
-    })
-  });
-  if (!response.ok) {
-    throw new Error('Failed to add to cart');
-  }
-  return response.json();
-}
-
-// Update cart item
-export async function updateCartItem(itemId, quantity) {
-  const response = await fetch(`${API_BASE_URL}/api/cart/update/${itemId}/`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',  // ADDED
-    body: JSON.stringify({ quantity })
-  });
-  if (!response.ok) {
-    throw new Error('Failed to update cart item');
-  }
-  return response.json();
-}
-
-// Remove from cart
-export async function removeFromCart(itemId) {
-  const response = await fetch(`${API_BASE_URL}/api/cart/remove/${itemId}/`, {
-    method: 'DELETE',
-    credentials: 'include',  // ADDED
-  });
-  if (!response.ok) {
-    throw new Error('Failed to remove from cart');
-  }
-  return response.json();
-}
-
-// ==================== FAVORITE FUNCTIONS ====================
-
-// Add to favorites
-export async function addFavorite(menuItemId) {
-  const response = await fetch(`${API_BASE_URL}/api/favorites/add/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',  // ADDED
-    body: JSON.stringify({
-      menu_item_id: menuItemId,
-      session_id: getSessionId()
-    })
-  });
-  if (!response.ok) {
-    throw new Error('Failed to add to favorites');
-  }
-  return response.json();
-}
-
-// Remove from favorites
-export async function removeFavorite(menuItemId) {
-  const sessionId = getSessionId();
-  const response = await fetch(
-    `${API_BASE_URL}/api/favorites/remove/?session_id=${sessionId}&menu_item_id=${menuItemId}`,
-    { 
-      method: 'DELETE',
-      credentials: 'include',  // ADDED
-    }
-  );
-  if (!response.ok) {
-    throw new Error('Failed to remove from favorites');
-  }
-  return response.json();
-}
-
-// Get all favorites
-export async function getFavorites() {
-  const sessionId = getSessionId();
-  const response = await fetch(`${API_BASE_URL}/api/favorites/?session_id=${sessionId}`, {
-    credentials: 'include',  // ADDED
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch favorites');
-  }
-  return response.json();
-}
-
-// Get favorite IDs (for quick checking if item is favorited)
-export async function getFavoriteIds() {
-  const sessionId = getSessionId();
-  const response = await fetch(`${API_BASE_URL}/api/favorites/ids/?session_id=${sessionId}`, {
-    credentials: 'include',  // ADDED
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch favorite IDs');
-  }
-  return response.json();
-}
-
-// ==================== ORDER FUNCTIONS ====================
-
-// Create order
-export async function createOrder(orderData) {
-  const response = await fetch(`${API_BASE_URL}/api/orders/create/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',  // ADDED
-    body: JSON.stringify({
-      ...orderData,
-      session_id: getSessionId()
-    })
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create order');
-  }
-  return response.json();
-}
-
-// Get orders
-export async function getOrders() {
-  const sessionId = getSessionId();
-  const response = await fetch(`${API_BASE_URL}/api/orders/?session_id=${sessionId}`, {
-    credentials: 'include',  // ADDED
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch orders');
-  }
-  return response.json();
-}
-
-// ==================== ADMIN FUNCTIONS ====================
-
-// Get all menu items (Admin - includes unavailable items)
-export async function getAllMenuItemsAdmin() {
-  const response = await fetch(`${API_BASE_URL}/api/admin/menu/`, {
-    credentials: 'include',  // ADDED
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch admin menu items');
-  }
-  return response.json();
-}
-
-// Create menu item (Admin)
-export async function createMenuItem(itemData) {
-  const response = await fetch(`${API_BASE_URL}/api/admin/menu/create/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',  // ADDED
-    body: JSON.stringify(itemData)
-  });
-  if (!response.ok) {
-    throw new Error('Failed to create menu item');
-  }
-  return response.json();
-}
-
-// Update menu item (Admin)
-export async function updateMenuItem(itemId, itemData) {
-  const response = await fetch(`${API_BASE_URL}/api/admin/menu/update/${itemId}/`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',  // ADDED
-    body: JSON.stringify(itemData)
-  });
-  if (!response.ok) {
-    throw new Error('Failed to update menu item');
-  }
-  return response.json();
-}
-
-// Delete menu item (Admin)
-export async function deleteMenuItem(itemId) {
-  const response = await fetch(`${API_BASE_URL}/api/admin/menu/delete/${itemId}/`, {
-    method: 'DELETE',
-    credentials: 'include',  // ADDED
-  });
-  if (!response.ok) {
-    throw new Error('Failed to delete menu item');
-  }
-  return response.json();
-}
-
-// ==================== FOOD PARTNER FUNCTIONS ====================
-
-// Get all food partners
-export async function getFoodPartners() {
-  const response = await fetch(`${API_BASE_URL}/api/partners/`, {
-    credentials: 'include',  // ADDED
-  });
-  if (!response.ok) throw new Error('Failed to fetch partners');
-  return response.json();
-}
-
-// Get menu items for a specific partner
-export async function getPartnerMenuItems(partnerName) {
-  // Validate partner name
-  if (!partnerName || partnerName === 'undefined') {
-    console.error('Invalid partner name:', partnerName);
-    throw new Error('Partner name is required');
-  }
-  
-  // Partner name comes from URL params which Next.js already encodes/decodes properly
-  // So we need to encode it for the API call
-  const encodedName = encodeURIComponent(partnerName);
-  
-  console.log('Fetching partner menu for:', partnerName);
-  console.log('Encoded as:', encodedName);
-  console.log('Full URL:', `${API_BASE_URL}/api/partners/${encodedName}/menu/`);
-  
-  const response = await fetch(`${API_BASE_URL}/api/partners/${encodedName}/menu/`, {
-    credentials: 'include',
-  });
-  
-  if (!response.ok) {
-    console.error('Failed to fetch partner menu. Status:', response.status);
-    throw new Error('Failed to fetch partner menu');
-  }
-  
-  return response.json();
-}
-
-// ==================== ADMIN ORDER FUNCTIONS ====================
-
-// Get all orders (Admin)
-export async function getAllOrders() {
-  const response = await fetch(`${API_BASE_URL}/api/admin/orders/`, {
-    credentials: 'include',  // ADDED
-  });
-  if (!response.ok) throw new Error('Failed to fetch orders');
-  return response.json();
-}
-
-// Update order status (Admin)
-export async function updateOrderStatus(orderId, status) {
-  const response = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/status/`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',  // ADDED
-    body: JSON.stringify({ status })
-  });
-  if (!response.ok) throw new Error('Failed to update order status');
-  return response.json();
-}
-
 // ==================== AUTHENTICATION FUNCTIONS ====================
 
 // Signup
@@ -287,7 +23,14 @@ export async function signup(username, email, password, role = 'member', foodPar
     const error = await response.json();
     throw new Error(error.error || 'Signup failed');
   }
-  return response.json();
+  const data = await response.json();
+  
+  // Store user info in localStorage
+  if (data.user) {
+    localStorage.setItem('user', JSON.stringify(data.user));
+  }
+  
+  return data;
 }
 
 // Login
@@ -303,7 +46,14 @@ export async function login(username, password) {
     const error = await response.json();
     throw new Error(error.error || 'Login failed');
   }
-  return response.json();
+  const data = await response.json();
+  
+  // Store user info in localStorage
+  if (data.user) {
+    localStorage.setItem('user', JSON.stringify(data.user));
+  }
+  
+  return data;
 }
 
 // Logout
@@ -316,23 +66,46 @@ export async function logout() {
   if (!response.ok) {
     throw new Error('Logout failed');
   }
+  
+  // Clear user info from localStorage
+  localStorage.removeItem('user');
+  
   return response.json();
 }
 
 // Check authentication status
 export async function checkAuth() {
-  const response = await fetch(`${API_BASE_URL}/api/auth/check/`, {
-    credentials: 'include'
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to check authentication');
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/check/`, {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      // Clear localStorage if auth check fails
+      localStorage.removeItem('user');
+      return { authenticated: false, user: null };
+    }
+    
+    const data = await response.json();
+    
+    // Update localStorage with current user data
+    if (data.authenticated && data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+    } else {
+      localStorage.removeItem('user');
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Auth check error:', error);
+    localStorage.removeItem('user');
+    return { authenticated: false, user: null };
   }
-  return response.json();
 }
 
 // Helper function to get current user from localStorage
 export function getCurrentUser() {
+  if (typeof window === 'undefined') return null;
   const userStr = localStorage.getItem('user');
   return userStr ? JSON.parse(userStr) : null;
 }
@@ -341,7 +114,7 @@ export function getCurrentUser() {
 export async function isAuthenticated() {
   try {
     const data = await checkAuth();
-    return data.authenticated;
+    return data.authenticated === true;
   } catch (error) {
     return false;
   }
@@ -353,12 +126,166 @@ export function hasRole(role) {
   return user && user.role === role;
 }
 
+// ==================== CART FUNCTIONS ====================
+
+// Get cart - works for both authenticated and guest users
+export async function getCart() {
+  const sessionId = getSessionId();
+  const response = await fetch(`${API_BASE_URL}/api/cart/?session_id=${sessionId}`, {
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch cart');
+  }
+  return response.json();
+}
+
+// Add to cart
+export async function addToCart(menuItemId, quantity = 1) {
+  const response = await fetch(`${API_BASE_URL}/api/cart/add/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      menu_item_id: menuItemId,
+      quantity: quantity,
+      session_id: getSessionId()
+    })
+  });
+  if (!response.ok) {
+    throw new Error('Failed to add to cart');
+  }
+  return response.json();
+}
+
+// Update cart item
+export async function updateCartItem(itemId, quantity) {
+  const response = await fetch(`${API_BASE_URL}/api/cart/update/${itemId}/`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ quantity })
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update cart item');
+  }
+  return response.json();
+}
+
+// Remove from cart
+export async function removeFromCart(itemId) {
+  const response = await fetch(`${API_BASE_URL}/api/cart/remove/${itemId}/`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to remove from cart');
+  }
+  return response.json();
+}
+
+// ==================== ORDER FUNCTIONS ====================
+
+// Create order - requires authentication
+export async function createOrder(orderData) {
+  const response = await fetch(`${API_BASE_URL}/api/orders/create/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      ...orderData,
+      session_id: getSessionId()
+    })
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create order');
+  }
+  return response.json();
+}
+
+// Get orders - requires authentication
+export async function getOrders() {
+  const sessionId = getSessionId();
+  const response = await fetch(`${API_BASE_URL}/api/orders/?session_id=${sessionId}`, {
+    credentials: 'include',
+  });
+  
+  if (response.status === 401) {
+    throw new Error('Authentication required');
+  }
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch orders');
+  }
+  return response.json();
+}
+
+// ==================== FAVORITE FUNCTIONS ====================
+
+// Add to favorites
+export async function addFavorite(menuItemId) {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/add/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      menu_item_id: menuItemId,
+      session_id: getSessionId()
+    })
+  });
+  if (!response.ok) {
+    throw new Error('Failed to add to favorites');
+  }
+  return response.json();
+}
+
+// Remove from favorites
+export async function removeFavorite(menuItemId) {
+  const sessionId = getSessionId();
+  const response = await fetch(
+    `${API_BASE_URL}/api/favorites/remove/?session_id=${sessionId}&menu_item_id=${menuItemId}`,
+    { 
+      method: 'DELETE',
+      credentials: 'include',
+    }
+  );
+  if (!response.ok) {
+    throw new Error('Failed to remove from favorites');
+  }
+  return response.json();
+}
+
+// Get all favorites
+export async function getFavorites() {
+  const sessionId = getSessionId();
+  const response = await fetch(`${API_BASE_URL}/api/favorites/?session_id=${sessionId}`, {
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch favorites');
+  }
+  return response.json();
+}
+
+// Get favorite IDs
+export async function getFavoriteIds() {
+  const sessionId = getSessionId();
+  const response = await fetch(`${API_BASE_URL}/api/favorites/ids/?session_id=${sessionId}`, {
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch favorite IDs');
+  }
+  return response.json();
+}
+
 // ==================== MENU FUNCTIONS ====================
 
 // Get all available menu items
 export async function getMenuItems() {
   const response = await fetch(`${API_BASE_URL}/api/menu/`, {
-    credentials: 'include',  // ADDED
+    credentials: 'include',
   });
   if (!response.ok) {
     throw new Error('Failed to fetch menu items');
@@ -379,11 +306,117 @@ export async function getMenuItemById(id) {
   return response.json();
 }
 
+// ==================== FOOD PARTNER FUNCTIONS ====================
+
+// Get all food partners
+export async function getFoodPartners() {
+  const response = await fetch(`${API_BASE_URL}/api/partners/`, {
+    credentials: 'include',
+  });
+  if (!response.ok) throw new Error('Failed to fetch partners');
+  return response.json();
+}
+
+// Get menu items for a specific partner
+export async function getPartnerMenuItems(partnerName) {
+  if (!partnerName || partnerName === 'undefined') {
+    console.error('Invalid partner name:', partnerName);
+    throw new Error('Partner name is required');
+  }
+  
+  const encodedName = encodeURIComponent(partnerName);
+  
+  const response = await fetch(`${API_BASE_URL}/api/partners/${encodedName}/menu/`, {
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    console.error('Failed to fetch partner menu. Status:', response.status);
+    throw new Error('Failed to fetch partner menu');
+  }
+  
+  return response.json();
+}
+
+// ==================== ADMIN FUNCTIONS ====================
+
+// Get all menu items (Admin)
+export async function getAllMenuItemsAdmin() {
+  const response = await fetch(`${API_BASE_URL}/api/admin/menu/`, {
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch admin menu items');
+  }
+  return response.json();
+}
+
+// Create menu item (Admin)
+export async function createMenuItem(itemData) {
+  const response = await fetch(`${API_BASE_URL}/api/admin/menu/create/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(itemData)
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create menu item');
+  }
+  return response.json();
+}
+
+// Update menu item (Admin)
+export async function updateMenuItem(itemId, itemData) {
+  const response = await fetch(`${API_BASE_URL}/api/admin/menu/update/${itemId}/`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(itemData)
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update menu item');
+  }
+  return response.json();
+}
+
+// Delete menu item (Admin)
+export async function deleteMenuItem(itemId) {
+  const response = await fetch(`${API_BASE_URL}/api/admin/menu/delete/${itemId}/`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to delete menu item');
+  }
+  return response.json();
+}
+
+// Get all orders (Admin)
+export async function getAllOrders() {
+  const response = await fetch(`${API_BASE_URL}/api/admin/orders/`, {
+    credentials: 'include',
+  });
+  if (!response.ok) throw new Error('Failed to fetch orders');
+  return response.json();
+}
+
+// Update order status (Admin)
+export async function updateOrderStatus(orderId, status) {
+  const response = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/status/`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ status })
+  });
+  if (!response.ok) throw new Error('Failed to update order status');
+  return response.json();
+}
+
 // ==================== HELPER FUNCTIONS ====================
 
-// Get or create session ID
+// Get or create session ID (for guest users)
 function getSessionId() {
-  if (typeof window === 'undefined') return null; // Server-side check
+  if (typeof window === 'undefined') return null;
   
   let sessionId = localStorage.getItem('session_id');
   if (!sessionId) {
