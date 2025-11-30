@@ -298,7 +298,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 # ==================== SESSION AND COOKIE SETTINGS ====================
 # Cross-domain session cookie settings (required for Vercel + Render)
-S# Required for cross-domain login (Vercel + Render)
+# Required for cross-domain login (Vercel + Render)
 SESSION_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True
