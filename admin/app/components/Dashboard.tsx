@@ -71,8 +71,10 @@ type Stats = {
 };
 
 // API call
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clicktoeat-pw67.onrender.com';
+
 async function getAllOrders() {
-  const response = await fetch('http://127.0.0.1:8000/api/admin/orders/');
+  const response = await fetch(`${API_BASE_URL}/api/admin/orders/`);
   if (!response.ok) throw new Error('Failed to fetch orders');
   return response.json();
 }
