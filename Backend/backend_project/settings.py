@@ -92,7 +92,8 @@ CORS_ALLOWED_ORIGINS = [
     # Production URLs - DOMAINS ONLY, NO PATHS
     "https://clicktoeat-pw67.onrender.com",
     "https://clicktoeat-frontend.onrender.com",
-    "https://clicktoeat-admin.onrender.com",  # ✅ Fixed - removed /products and /orders
+    "https://clicktoeat-admin.onrender.com", 
+    "https://clickto-eat-rxo1-ipppgapnc-bryans-projects-e4c7e470.vercel.app",# ✅ Fixed - removed /products and /orders
     
     # Vercel deployment
     "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",

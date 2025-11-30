@@ -1,6 +1,13 @@
 // Frontend/app/services/api.js
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Enhanced and Extended API service
 
+// ==================== CONFIGURATION ====================
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clicktoeat-pw67.onrender.com';
+
+console.log('🌐 API Configuration:', {
+  API_BASE_URL,
+  environment: process.env.NODE_ENV
+});
 
 // ==================== SESSION MANAGEMENT ====================
 export function getSessionId() {
@@ -10,267 +17,682 @@ export function getSessionId() {
   if (!sessionId) {
     sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem('cart_session_id', sessionId);
+    console.log('🆔 New session created:', sessionId);
   }
   return sessionId;
 }
 
-// ==================== AUTHENTICATION FUNCTIONS ====================
-export async function signup(username, email, password, role = 'member', foodPartner = '') {
-  const response = await fetch(`${API_BASE_URL}/api/auth/signup/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({
-      username,
-      email,
-      password,
-      role,
-      food_partner: foodPartner
-    })
-  });
-  
+export function clearSession() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('cart_session_id');
+  console.log('🗑️ Session cleared');
+}
+
+// ==================== HELPER FUNCTIONS ====================
+async function handleResponse(response) {
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Signup failed');
+    let errorMessage = 'Request failed';
+    try {
+      const error = await response.json();
+      errorMessage = error.error || error.message || errorMessage;
+    } catch {
+      errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
+  
+  if (response.status === 204) {
+    return { success: true };
+  }
+  
   return response.json();
+}
+
+// Rate limiting helper
+const rateLimiter = {
+  requests: {},
+  canMakeRequest(key, maxRequests = 10, windowMs = 60000) {
+    const now = Date.now();
+    if (!this.requests[key]) {
+      this.requests[key] = [];
+    }
+    
+    // Remove old requests outside the window
+    this.requests[key] = this.requests[key].filter(time => now - time < windowMs);
+    
+    if (this.requests[key].length >= maxRequests) {
+      return false;
+    }
+    
+    this.requests[key].push(now);
+    return true;
+  }
+};
+
+// ==================== AUTHENTICATION FUNCTIONS ====================
+export async function signup(username, email, password, fullName, srCode, role = 'member', foodPartner = '') {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/signup/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        username,
+        email,
+        password,
+        full_name: fullName,
+        sr_code: srCode,
+        role,
+        food_partner: foodPartner
+      })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Signup error:', error);
+    throw error;
+  }
 }
 
 export async function login(username, password) {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ username, password })
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Login failed');
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/login/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username, password })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Login error:', error);
+    throw error;
   }
-  return response.json();
 }
 
 export async function logout() {
-  const response = await fetch(`${API_BASE_URL}/api/auth/logout/`, {
-    method: 'POST',
-    credentials: 'include'
-  });
-  
-  if (!response.ok) {
-    throw new Error('Logout failed');
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/logout/`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    clearSession(); // Clear session on logout
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Logout error:', error);
+    throw error;
   }
-  return response.json();
 }
 
 export async function checkAuth() {
-  const response = await fetch(`${API_BASE_URL}/api/auth/check/`, {
-    credentials: 'include'
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to check authentication');
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/check/`, {
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Check auth error:', error);
+    throw error;
   }
-  return response.json();
+}
+
+// NEW: Update user profile
+export async function updateProfile(userId, profileData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/profile/${userId}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(profileData)
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Update profile error:', error);
+    throw error;
+  }
+}
+
+// NEW: Change password
+export async function changePassword(oldPassword, newPassword) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/change-password/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Change password error:', error);
+    throw error;
+  }
 }
 
 // ==================== MENU FUNCTIONS ====================
-export async function getMenuItems() {
-  const response = await fetch(`${API_BASE_URL}/api/menu/`);
-  if (!response.ok) throw new Error('Failed to fetch menu items');
-  return response.json();
+export async function getMenuItems(filters = {}) {
+  try {
+    const params = new URLSearchParams();
+    if (filters.category) params.append('category', filters.category);
+    if (filters.partner) params.append('partner', filters.partner);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.minPrice) params.append('min_price', filters.minPrice);
+    if (filters.maxPrice) params.append('max_price', filters.maxPrice);
+    
+    const url = `${API_BASE_URL}/api/menu/${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get menu items error:', error);
+    throw error;
+  }
+}
+
+// NEW: Get single menu item details
+export async function getMenuItem(itemId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/menu/${itemId}/`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get menu item error:', error);
+    throw error;
+  }
+}
+
+// NEW: Get menu categories
+export async function getCategories() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/menu/categories/`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get categories error:', error);
+    throw error;
+  }
 }
 
 // ==================== CART FUNCTIONS ====================
 export async function getCart() {
-  const response = await fetch(`${API_BASE_URL}/api/cart/?session_id=${getSessionId()}`);
-  if (!response.ok) throw new Error('Failed to fetch cart');
-  return response.json();
+  try {
+    const sessionId = getSessionId();
+    const response = await fetch(`${API_BASE_URL}/api/cart/?session_id=${sessionId}`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get cart error:', error);
+    throw error;
+  }
 }
 
 export async function addToCart(menuItemId, quantity = 1) {
-  const response = await fetch(`${API_BASE_URL}/api/cart/add/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      menu_item_id: menuItemId,
-      quantity: quantity,
-      session_id: getSessionId()
-    })
-  });
-  if (!response.ok) throw new Error('Failed to add to cart');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/cart/add/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        menu_item_id: menuItemId,
+        quantity: quantity,
+        session_id: getSessionId()
+      })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Add to cart error:', error);
+    throw error;
+  }
 }
 
 export async function updateCartItem(itemId, quantity) {
-  const response = await fetch(`${API_BASE_URL}/api/cart/update/${itemId}/`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ quantity })
-  });
-  if (!response.ok) throw new Error('Failed to update cart');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/cart/update/${itemId}/`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quantity })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Update cart error:', error);
+    throw error;
+  }
 }
 
 export async function removeFromCart(itemId) {
-  const response = await fetch(`${API_BASE_URL}/api/cart/remove/${itemId}/`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) throw new Error('Failed to remove from cart');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/cart/remove/${itemId}/`, {
+      method: 'DELETE',
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Remove from cart error:', error);
+    throw error;
+  }
+}
+
+// NEW: Clear entire cart
+export async function clearCart() {
+  try {
+    const sessionId = getSessionId();
+    const response = await fetch(`${API_BASE_URL}/api/cart/clear/?session_id=${sessionId}`, {
+      method: 'DELETE',
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Clear cart error:', error);
+    throw error;
+  }
 }
 
 // ==================== ORDER FUNCTIONS ====================
 export async function createOrder(orderData) {
-  const response = await fetch(`${API_BASE_URL}/api/orders/create/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      ...orderData,
-      session_id: getSessionId()
-    })
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create order');
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/orders/create/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...orderData,
+        session_id: getSessionId()
+      })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Create order error:', error);
+    throw error;
   }
-  return response.json();
 }
 
 export async function getOrders() {
-  const sessionId = getSessionId();
-  const response = await fetch(`${API_BASE_URL}/api/orders/?session_id=${sessionId}`);
-  if (!response.ok) throw new Error('Failed to fetch orders');
-  return response.json();
+  try {
+    const sessionId = getSessionId();
+    const response = await fetch(`${API_BASE_URL}/api/orders/?session_id=${sessionId}`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get orders error:', error);
+    throw error;
+  }
+}
+
+// NEW: Get single order details
+export async function getOrder(orderId) {
+  try {
+    const sessionId = getSessionId();
+    const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/?session_id=${sessionId}`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get order error:', error);
+    throw error;
+  }
+}
+
+// NEW: Cancel order
+export async function cancelOrder(orderId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/cancel/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: getSessionId() })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Cancel order error:', error);
+    throw error;
+  }
+}
+
+// NEW: Rate order
+export async function rateOrder(orderId, rating, comment = '') {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/rate/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rating,
+        comment,
+        session_id: getSessionId()
+      })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Rate order error:', error);
+    throw error;
+  }
 }
 
 // ==================== FAVORITE FUNCTIONS ====================
 export async function addFavorite(menuItemId) {
-  const response = await fetch(`${API_BASE_URL}/api/favorites/add/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      menu_item_id: menuItemId,
-      session_id: getSessionId()
-    })
-  });
-  if (!response.ok) throw new Error('Failed to add favorite');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/favorites/add/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        menu_item_id: menuItemId,
+        session_id: getSessionId()
+      })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Add favorite error:', error);
+    throw error;
+  }
 }
 
 export async function removeFavorite(menuItemId) {
-  const sessionId = getSessionId();
-  const response = await fetch(
-    `${API_BASE_URL}/api/favorites/remove/?session_id=${sessionId}&menu_item_id=${menuItemId}`,
-    { method: 'DELETE' }
-  );
-  if (!response.ok) throw new Error('Failed to remove favorite');
-  return response.json();
+  try {
+    const sessionId = getSessionId();
+    const response = await fetch(
+      `${API_BASE_URL}/api/favorites/remove/?session_id=${sessionId}&menu_item_id=${menuItemId}`,
+      { method: 'DELETE' }
+    );
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Remove favorite error:', error);
+    throw error;
+  }
 }
 
 export async function getFavorites() {
-  const sessionId = getSessionId();
-  const response = await fetch(`${API_BASE_URL}/api/favorites/?session_id=${sessionId}`);
-  if (!response.ok) throw new Error('Failed to fetch favorites');
-  return response.json();
+  try {
+    const sessionId = getSessionId();
+    const response = await fetch(`${API_BASE_URL}/api/favorites/?session_id=${sessionId}`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get favorites error:', error);
+    throw error;
+  }
 }
 
 export async function getFavoriteIds() {
-  const sessionId = getSessionId();
-  const response = await fetch(`${API_BASE_URL}/api/favorites/ids/?session_id=${sessionId}`);
-  if (!response.ok) throw new Error('Failed to fetch favorite IDs');
-  return response.json();
+  try {
+    const sessionId = getSessionId();
+    const response = await fetch(`${API_BASE_URL}/api/favorites/ids/?session_id=${sessionId}`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get favorite IDs error:', error);
+    throw error;
+  }
 }
 
 // ==================== FOOD PARTNER FUNCTIONS ====================
 export async function getFoodPartners() {
-  const response = await fetch(`${API_BASE_URL}/api/partners/`);
-  if (!response.ok) throw new Error('Failed to fetch partners');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/partners/`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get partners error:', error);
+    throw error;
+  }
 }
 
 export async function getPartnerMenuItems(partnerName) {
-  const encodedName = encodeURIComponent(partnerName);
-  const response = await fetch(`${API_BASE_URL}/api/partners/${encodedName}/menu/`);
-  if (!response.ok) throw new Error('Failed to fetch partner menu');
-  return response.json();
+  try {
+    const encodedName = encodeURIComponent(partnerName);
+    const response = await fetch(`${API_BASE_URL}/api/partners/${encodedName}/menu/`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get partner menu error:', error);
+    throw error;
+  }
+}
+
+// NEW: Get partner details
+export async function getPartnerDetails(partnerName) {
+  try {
+    const encodedName = encodeURIComponent(partnerName);
+    const response = await fetch(`${API_BASE_URL}/api/partners/${encodedName}/`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get partner details error:', error);
+    throw error;
+  }
 }
 
 // ==================== ADMIN MENU FUNCTIONS ====================
 export async function getAllMenuItemsAdmin() {
-  const response = await fetch(`${API_BASE_URL}/api/admin/menu/`);
-  if (!response.ok) throw new Error('Failed to fetch admin menu items');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/menu/`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get admin menu error:', error);
+    throw error;
+  }
 }
 
 export async function createMenuItem(itemData) {
-  const response = await fetch(`${API_BASE_URL}/api/admin/menu/create/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(itemData)
-  });
-  if (!response.ok) throw new Error('Failed to create menu item');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/menu/create/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(itemData)
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Create menu item error:', error);
+    throw error;
+  }
 }
 
 export async function updateMenuItem(itemId, itemData) {
-  const response = await fetch(`${API_BASE_URL}/api/admin/menu/update/${itemId}/`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(itemData)
-  });
-  if (!response.ok) throw new Error('Failed to update menu item');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/menu/update/${itemId}/`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(itemData)
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Update menu item error:', error);
+    throw error;
+  }
 }
 
 export async function deleteMenuItem(itemId) {
-  const response = await fetch(`${API_BASE_URL}/api/admin/menu/delete/${itemId}/`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Failed to delete item');
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/menu/delete/${itemId}/`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Delete menu item error:', error);
+    throw error;
   }
+}
 
-  if (response.status === 204) return null;
-  return response.json();
+// NEW: Bulk update menu items
+export async function bulkUpdateMenuItems(updates) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/menu/bulk-update/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updates })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Bulk update error:', error);
+    throw error;
+  }
 }
 
 // ==================== ADMIN ORDER FUNCTIONS ====================
 export async function getAllOrders() {
-  const response = await fetch(`${API_BASE_URL}/api/admin/orders/`);
-  if (!response.ok) throw new Error('Failed to fetch orders');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/orders/`);
+    const data = await handleResponse(response);
+    return data;
+  } catch (error) {
+    console.error('❌ Get all orders error:', error);
+    throw error;
+  }
 }
 
 export async function updateOrderStatus(orderId, status) {
-  const response = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/status/`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status })
-  });
-  if (!response.ok) throw new Error('Failed to update order status');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/status/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Update order status error:', error);
+    throw error;
+  }
+}
+
+// NEW: Get order statistics
+export async function getOrderStats(dateRange = {}) {
+  try {
+    const params = new URLSearchParams();
+    if (dateRange.start) params.append('start_date', dateRange.start);
+    if (dateRange.end) params.append('end_date', dateRange.end);
+    
+    const url = `${API_BASE_URL}/api/admin/orders/stats/${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get order stats error:', error);
+    throw error;
+  }
+}
+
+// NEW: Get revenue analytics
+export async function getRevenueAnalytics(period = 'week') {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/analytics/revenue/?period=${period}`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get revenue analytics error:', error);
+    throw error;
+  }
 }
 
 // ==================== PARTNER STAFF FUNCTIONS ====================
-// ==================== PARTNER STAFF FUNCTIONS ====================
 export async function getPartnerOrders(partnerName) {
-  const response = await fetch(
-    `${API_BASE_URL}/api/partner/orders/?partner=${encodeURIComponent(partnerName)}`
-  );
-  if (!response.ok) throw new Error('Failed to fetch partner orders');
-  return response.json();
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/partner/orders/?partner=${encodeURIComponent(partnerName)}`
+    );
+    const data = await handleResponse(response);
+    return data;
+  } catch (error) {
+    console.error('❌ Get partner orders error:', error);
+    throw error;
+  }
 }
 
 export async function updatePartnerOrderStatus(orderId, status) {
-  const response = await fetch(`${API_BASE_URL}/api/partner/orders/${orderId}/status/`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status })
-  });
-  if (!response.ok) throw new Error('Failed to update status');
-  return response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/partner/orders/${orderId}/status/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Update partner order status error:', error);
+    throw error;
+  }
 }
+
+// NEW: Get partner statistics
+export async function getPartnerStats(partnerName) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/partner/stats/?partner=${encodeURIComponent(partnerName)}`
+    );
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get partner stats error:', error);
+    throw error;
+  }
+}
+
+// ==================== NOTIFICATIONS ====================
+// NEW: Get notifications
+export async function getNotifications() {
+  try {
+    const sessionId = getSessionId();
+    const response = await fetch(`${API_BASE_URL}/api/notifications/?session_id=${sessionId}`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get notifications error:', error);
+    throw error;
+  }
+}
+
+// NEW: Mark notification as read
+export async function markNotificationRead(notificationId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Mark notification read error:', error);
+    throw error;
+  }
+}
+
+// ==================== REVIEWS ====================
+// NEW: Submit review for menu item
+export async function submitMenuReview(menuItemId, rating, comment) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/menu/${menuItemId}/reviews/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rating,
+        comment,
+        session_id: getSessionId()
+      })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Submit review error:', error);
+    throw error;
+  }
+}
+
+// NEW: Get reviews for menu item
+export async function getMenuReviews(menuItemId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/menu/${menuItemId}/reviews/`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get reviews error:', error);
+    throw error;
+  }
+}
+
+// ==================== SEARCH ====================
+// NEW: Search across all content
+export async function searchAll(query) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/search/?q=${encodeURIComponent(query)}`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Search error:', error);
+    throw error;
+  }
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+// NEW: Check service availability
+export async function checkServiceAvailability() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/status/`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Service check error:', error);
+    throw error;
+  }
+}
+
+// NEW: Get available pickup times
+export async function getAvailablePickupTimes(date) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/pickup-times/?date=${date}`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('❌ Get pickup times error:', error);
+    throw error;
+  }
+}
+
+// ==================== EXPORT ====================
+export { API_BASE_URL };
