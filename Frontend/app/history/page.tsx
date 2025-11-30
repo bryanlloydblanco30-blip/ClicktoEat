@@ -29,7 +29,8 @@ export default function HistoryPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [authError, setAuthError] = useState<string>("");
 
   useEffect(() => {
     checkAuthAndFetchOrders();
@@ -38,12 +39,13 @@ export default function HistoryPage() {
   const checkAuthAndFetchOrders = async () => {
     try {
       setLoading(true);
+      setAuthError("");
       
-      // Check authentication using your API service
+      // Check authentication
       const authData = await checkAuth();
       console.log('Auth check response:', authData);
       
-      if (!authData.authenticated) {
+      if (!authData || !authData.authenticated) {
         console.log('User not authenticated');
         setIsAuthenticated(false);
         setLoading(false);
@@ -52,10 +54,21 @@ export default function HistoryPage() {
       
       console.log('User authenticated:', authData.user);
       setIsAuthenticated(true);
+      
+      // Fetch orders
       await fetchOrders();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Auth check error:', error);
-      setIsAuthenticated(false);
+      
+      // Check if it's a 401/403 error (unauthorized)
+      if (error.message?.includes('401') || error.message?.includes('403')) {
+        setIsAuthenticated(false);
+        setAuthError("Please log in to view your order history");
+      } else {
+        setIsAuthenticated(false);
+        setAuthError("Failed to verify authentication. Please try logging in again.");
+      }
+      
       setLoading(false);
     }
   };
@@ -65,8 +78,14 @@ export default function HistoryPage() {
       const data = await getOrders();
       console.log('Orders fetched:', data);
       setOrders(data.orders || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching orders:', error);
+      
+      // If orders fetch fails with auth error, user is not authenticated
+      if (error.message?.includes('401') || error.message?.includes('403')) {
+        setIsAuthenticated(false);
+        setAuthError("Session expired. Please log in again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -82,7 +101,6 @@ export default function HistoryPage() {
   };
 
   const formatTime = (timeString: string) => {
-    // Handle time string (HH:MM:SS)
     const [hours, minutes] = timeString.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -119,7 +137,7 @@ export default function HistoryPage() {
   }
 
   // Show login prompt if not authenticated
-  if (!isAuthenticated) {
+  if (isAuthenticated === false) {
     return (
       <div className="min-h-screen p-6">
         <div className="flex items-center mb-6">
@@ -135,14 +153,23 @@ export default function HistoryPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Please Log In</h2>
-          <p className="text-gray-600 mb-6">You need to log in to view your order history</p>
-          <button
-            onClick={() => router.push('/login')}
-            className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-semibold shadow-lg"
-          >
-            Go to Login
-          </button>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Authentication Required</h2>
+          <p className="text-gray-600 mb-2">{authError || "You need to log in to view your order history"}</p>
+          <p className="text-sm text-gray-500 mb-6">Make sure cookies are enabled in your browser</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push('/login')}
+              className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-semibold shadow-lg"
+            >
+              Go to Login
+            </button>
+            <button
+              onClick={() => checkAuthAndFetchOrders()}
+              className="bg-gray-200 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-300 transition font-semibold"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );
