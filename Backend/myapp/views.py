@@ -8,6 +8,7 @@ from django.db.models import F, Sum
 import json
 from .models import MenuItem, Cart, CartItem, Order, OrderItem, Favorite
 from datetime import datetime
+from urllib.parse import unquote
 
 @csrf_exempt
 @require_http_methods(["POST"])
