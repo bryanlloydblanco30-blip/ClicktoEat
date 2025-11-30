@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { getAllOrders } from "../services/api"; // Adjust the path based on your structure
 
 // Define types matching your Django response
 type OrderItem = {
@@ -26,6 +25,12 @@ type Order = {
 };
 
 const STATUS_OPTIONS = ["pending", "confirmed", "preparing", "ready", "completed", "cancelled"];
+
+// Mock API function - replace with your actual import
+const getAllOrders = async () => {
+  const response = await fetch('/api/admin/orders');
+  return response.json();
+};
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -132,6 +137,7 @@ export default function AdminOrdersPage() {
               <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
                   <th className="p-4 font-semibold text-gray-600 text-sm">Order ID</th>
+                  <th className="p-4 font-semibold text-gray-600 text-sm">Customer</th>
                   <th className="p-4 font-semibold text-gray-600 text-sm">Date & Pickup</th>
                   <th className="p-4 font-semibold text-gray-600 text-sm">Items</th>
                   <th className="p-4 font-semibold text-gray-600 text-sm">Payment</th>
@@ -145,6 +151,13 @@ export default function AdminOrdersPage() {
                     <td className="p-4">
                       <span className="font-bold text-gray-800">#{order.id}</span>
                       <div className="text-xs text-gray-500 mt-1">{new Date(order.created_at).toLocaleDateString()}</div>
+                    </td>
+                    
+                    {/* ✅ CUSTOMER NAME COLUMN */}
+                    <td className="p-4">
+                      <div className="font-medium text-gray-800">
+                        {order.customer_name || 'N/A'}
+                      </div>
                     </td>
                     
                     <td className="p-4">
@@ -183,7 +196,6 @@ export default function AdminOrdersPage() {
                     </td>
 
                     <td className="p-4">
-                      {/* READ-ONLY STATUS BADGE */}
                       <span className={`
                         px-3 py-1.5 rounded-lg text-sm font-semibold border-2 capitalize inline-block
                         ${order.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : ''}
