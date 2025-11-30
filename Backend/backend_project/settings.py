@@ -266,8 +266,6 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.vercel\.app$",
 ]
 
-CORS_ALLOW_CREDENTIALS = True
-
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -300,14 +298,16 @@ CSRF_TRUSTED_ORIGINS = [
 
 # ==================== SESSION AND COOKIE SETTINGS ====================
 # Cross-domain session cookie settings (required for Vercel + Render)
+S# Required for cross-domain login (Vercel + Render)
 SESSION_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
-
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False
+
+CORS_ALLOW_CREDENTIALS = True
 
 # Session configuration
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store sessions in database
