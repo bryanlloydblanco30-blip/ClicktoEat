@@ -94,6 +94,10 @@ CORS_ALLOWED_ORIGINS = [
     "https://clicktoeat-frontend.onrender.com",
     # Vercel deployment - ADD THIS
     "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
+    "https://clicktoeat-admin.onrender.com",
+    "https://clicktoeat-admin.onrender.com/products",
+    "https://clicktoeat-admin.onrender.com/orders",
+    
     # Development URLs
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -133,3 +137,16 @@ else:
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False
+
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
