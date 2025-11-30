@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const ADMIN_API_URL = 'https://clickto-eat-rxo1-41618asb3-bryans-projects-e4c7e470.vercel.app';
+const ADMIN_API_URL = '/admin-api';
 
 // ==================== HELPER FUNCTIONS ====================
 

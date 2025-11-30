@@ -12,7 +12,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'uploadcare.com',
       },
-      // Add any other image hosting services you use
+      {
+        source: '/admin-api/:path*',
+        destination: 'https://clickto-eat-rxo1-41618asb3-bryans-projects-e4c7e470.vercel.app/:path*',
+      }
     ],
   },
 }
