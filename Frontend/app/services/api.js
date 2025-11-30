@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const ADMIN_API_URL = '/admin-api';
+const ADMIN_API_URL = '/admin-api'; // Use the proxy
 
 // ==================== HELPER FUNCTIONS ====================
 
@@ -101,46 +101,46 @@ export async function signup(username, email, password, role = 'member', foodPar
   return data;
 }
 
-// Login
-// Update api.js - Login function
+// Login - USES PROXY TO AVOID CORS ISSUES
 export async function login(username, password) {
   try {
-    // Use direct backend URL for authentication to get proper cookies
-    const BACKEND_URL = 'https://clickto-eat-rxo1-ip41vktxo-bryans-projects-e4c7e470.vercel.app';
+    console.log('🔐 Attempting login via proxy:', ADMIN_API_URL);
     
     const response = await fetch(
-      `${BACKEND_URL}/api/auth/login/`,
+      `${ADMIN_API_URL}/api/auth/login/`,
       {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Important for cookies
+        credentials: 'include',
         body: JSON.stringify({ username, password })
       }
     );
 
-    console.log('Login response status:', response.status);
+    console.log('📡 Login response status:', response.status);
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      console.error('Login error details:', error);
+      console.error('❌ Login error details:', error);
       throw new Error(error.error || error.message || 'Login failed');
     }
 
     const data = await response.json();
-    console.log('Login successful:', data);
+    console.log('✅ Login successful:', data);
 
     if (data.user) {
       localStorage.setItem('user', JSON.stringify(data.user));
+      console.log('💾 User stored in localStorage');
     }
 
     return data;
   } catch (err) {
-    console.error('Login exception:', err);
+    console.error('❌ Login exception:', err);
     throw err;
   }
 }
+
 // Logout
 export async function logout() {
   const response = await apiFetch('/api/auth/logout/', {
