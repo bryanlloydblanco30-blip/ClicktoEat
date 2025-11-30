@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { getPartnerMenuItems, addToCart } from "../../services/api";
 
@@ -15,14 +15,20 @@ interface MenuItem {
   food_partner: string;
 }
 
-export default function PartnerDetailClient({ partnerName }: { partnerName: string }) {
+export default function PartnerDetailClient() {
   const router = useRouter();
+  const params = useParams();
   
-  console.log('PartnerDetailClient received partnerName:', partnerName);
-  console.log('Is undefined?', partnerName === undefined);
-  console.log('Is string "undefined"?', partnerName === 'undefined');
+  // Get partner name directly from URL params
+  const partnerName = params.partnerName as string;
   
-  // Add validation and fallback
+  console.log('=== CLIENT COMPONENT DEBUG ===');
+  console.log('Raw params:', params);
+  console.log('Partner name from params:', partnerName);
+  console.log('Type:', typeof partnerName);
+  console.log('==============================');
+  
+  // Validate partner name
   if (!partnerName || partnerName === 'undefined') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -40,9 +46,7 @@ export default function PartnerDetailClient({ partnerName }: { partnerName: stri
     );
   }
   
-  // Next.js already decodes URL params, so partnerName should be the raw name
-  // like "SpotG" not "SpotG" or "Theatery%20Food%20Hub"
-  const displayName = partnerName;
+  const displayName = decodeURIComponent(partnerName);
   
   console.log('Display name:', displayName);
 
