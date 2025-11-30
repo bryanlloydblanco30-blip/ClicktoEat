@@ -92,7 +92,9 @@ CORS_ALLOWED_ORIGINS = [
     # Production URLs
     "https://clicktoeat-pw67.onrender.com",
     "https://clicktoeat-frontend.onrender.com",
-    # Development URLs - ADD THESE
+    # Vercel deployment - ADD THIS
+    "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
+    # Development URLs
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
@@ -104,20 +106,26 @@ CSRF_TRUSTED_ORIGINS = [
     # Production URLs
     "https://clicktoeat-pw67.onrender.com",
     "https://clicktoeat-frontend.onrender.com",
-    # Development URLs - ADD THESE
+    # Vercel deployment - ADD THIS
+    "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
+    # Development URLs
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
-
+# Allow all Vercel preview deployments (including future ones)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+]
 # Session and CSRF Cookie Settings
 # For development (localhost)
 if DEBUG:
+    # Development settings
     SESSION_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_SAMESITE = 'Lax'
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
 else:
-    # For production (HTTPS)
+    # Production settings (HTTPS required)
     SESSION_COOKIE_SAMESITE = 'None'
     CSRF_COOKIE_SAMESITE = 'None'
     SESSION_COOKIE_SECURE = True
