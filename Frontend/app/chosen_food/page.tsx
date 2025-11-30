@@ -25,6 +25,7 @@ function ChosenFoodContent() {
   const [item, setItem] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     if (id) {
@@ -56,8 +57,8 @@ function ChosenFoodContent() {
     
     try {
       setAddingToCart(true);
-      await addToCart(item.id, 1);
-      alert(`✓ ${item.name} added to cart!`);
+      await addToCart(item.id, quantity);
+      alert(`✓ ${quantity}x ${item.name} added to cart!`);
       window.dispatchEvent(new Event('cartUpdated'));
     } catch (error) {
       console.error('Error adding to cart:', error);
@@ -65,6 +66,14 @@ function ChosenFoodContent() {
     } finally {
       setAddingToCart(false);
     }
+  };
+
+  const incrementQuantity = () => {
+    setQuantity(prev => prev + 1);
+  };
+
+  const decrementQuantity = () => {
+    setQuantity(prev => (prev > 1 ? prev - 1 : 1));
   };
 
   if (loading) {
@@ -95,6 +104,8 @@ function ChosenFoodContent() {
       </main>
     );
   }
+
+  const totalPrice = (parseFloat(item.price) * quantity).toFixed(2);
 
   return (
     <main className="p-4 max-w-4xl mx-auto">
@@ -151,6 +162,29 @@ function ChosenFoodContent() {
                 {item.category}
               </span>
             )}
+          </div>
+
+          {/* Quantity Selector */}
+          <div className="mb-6">
+            <label className="block text-gray-700 font-semibold mb-3 text-lg">Quantity</label>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={decrementQuantity}
+                className="w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded-lg flex items-center justify-center text-xl font-bold transition"
+              >
+                -
+              </button>
+              <span className="text-2xl font-bold w-16 text-center">{quantity}</span>
+              <button
+                onClick={incrementQuantity}
+                className="w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded-lg flex items-center justify-center text-xl font-bold transition"
+              >
+                +
+              </button>
+              <span className="ml-4 text-xl text-gray-600">
+                Total: <span className="font-bold text-red-600">₱{totalPrice}</span>
+              </span>
+            </div>
           </div>
 
           <button
