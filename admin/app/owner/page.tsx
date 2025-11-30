@@ -21,100 +21,126 @@ interface Order {
   rejectReason?: string;
 }
 
-    function OwnerContent() {
-    const searchParams = useSearchParams();
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [userInfo, setUserInfo] = useState<any>(null);
+function OwnerContent() {
+  const searchParams = useSearchParams();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<"active" | "history">("active");
 
-    useEffect(() => {
-        const userParam = searchParams.get('user');
+  useEffect(() => {
+    const userParam = searchParams.get('user');
+    
+    if (userParam) {
+      try {
+        const user = JSON.parse(decodeURIComponent(userParam));
         
-        if (userParam) {
-        try {
-            const user = JSON.parse(decodeURIComponent(userParam));
-            
-            if (user.role !== 'staff') {
-            window.location.href = 'http://localhost:3000/login';
-            return;
-            }
-            
-            localStorage.setItem('user', JSON.stringify(user));
-            setUserInfo(user);
-            loadOrders(user.food_partner);
-        } catch (error) {
-            console.error('Error parsing user data:', error);
-            window.location.href = 'http://localhost:3000/login';
+        if (user.role !== 'staff') {
+          window.location.href = 'http://localhost:3000/login';
+          return;
         }
-        } else {
-        const userStr = localStorage.getItem('user');
         
-        if (!userStr) {
-            window.location.href = 'http://localhost:3000/login';
-            return;
-        }
-
-        try {
-            const user = JSON.parse(userStr);
-            
-            if (user.role !== 'staff') {
-            window.location.href = 'http://localhost:3000/login';
-            return;
-            }
-
-            setUserInfo(user);
-            loadOrders(user.food_partner);
-        } catch (error) {
-            console.error('Auth error:', error);
-            window.location.href = 'http://localhost:3000/login';
-        }
-        }
-    }, [searchParams]);
-
-    const loadOrders = async (foodPartner: string) => {
-    try {
-        console.log('🔍 Loading orders for:', foodPartner);
-        
+        localStorage.setItem('user', JSON.stringify(user));
+        setUserInfo(user);
+        loadOrders(user.food_partner);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        window.location.href = 'http://localhost:3000/login';
+      }
+    } else {
+      const userStr = localStorage.getItem('user');
       
-        const url = `https://clicktoeat-pw67.onrender.com/api/partner/orders/?partner=${encodeURIComponent(foodPartner)}`;
-        console.log('📡 Fetching from:', url);
+      if (!userStr) {
+        window.location.href = 'http://localhost:3000/login';
+        return;
+      }
+
+      try {
+        const user = JSON.parse(userStr);
         
-        const response = await fetch(url);
-        
-        if (!response.ok) {
+        if (user.role !== 'staff') {
+          window.location.href = 'http://localhost:3000/login';
+          return;
+        }
+
+        setUserInfo(user);
+        loadOrders(user.food_partner);
+      } catch (error) {
+        console.error('Auth error:', error);
+        window.location.href = 'http://localhost:3000/login';
+      }
+    }
+  }, [searchParams]);
+
+  const loadOrders = async (foodPartner: string, attempt: number = 1) => {
+    try {
+      console.log(`🔍 Loading orders for: ${foodPartner} (Attempt ${attempt})`);
+      
+      const url = `https://clicktoeat-pw67.onrender.com/api/partner/orders/?partner=${encodeURIComponent(foodPartner)}`;
+      console.log('📡 Fetching from:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.status === 503) {
+        throw new Error('SERVICE_UNAVAILABLE');
+      }
+      
+      if (!response.ok) {
         console.error('❌ Backend error:', response.status, response.statusText);
         throw new Error(`Backend returned ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('📦 Backend response:', data);
-        
-        if (!data.orders || data.orders.length === 0) {
+      }
+      
+      const data = await response.json();
+      console.log('📦 Backend response:', data);
+      
+      if (!data.orders || data.orders.length === 0) {
         console.log('ℹ️ No orders found for this partner');
         setOrders([]);
         setLoading(false);
+        setRetrying(false);
         return;
-        }
-        
-        const transformedOrders = data.orders.map((order: any) => ({
+      }
+      
+      const transformedOrders = data.orders.map((order: any) => ({
         id: order.id,
         name: order.customer_name,
         item: order.items.map((i: any) => i.name).join(', '),
         quantity: order.items.reduce((sum: number, i: any) => sum + i.quantity, 0),
         totalPrice: parseFloat(order.total),
         status: order.status as OrderStatus
-        }));
-        
-        console.log('✅ Transformed orders:', transformedOrders);
-        setOrders(transformedOrders);
-    } catch (error) {
-        console.error('❌ Error loading orders:', error);
-        alert('Failed to load orders. Please check your connection and try again.');
-        setOrders([]); // Empty state - no fake data
+      }));
+      
+      console.log('✅ Transformed orders:', transformedOrders);
+      setOrders(transformedOrders);
+      setRetrying(false);
+      setRetryCount(0);
+    } catch (error: any) {
+      console.error('❌ Error loading orders:', error);
+      
+      if (error.message === 'SERVICE_UNAVAILABLE' && attempt < 5) {
+        setRetrying(true);
+        setRetryCount(attempt);
+        const delay = attempt * 3000;
+        console.log(`⏳ Retrying in ${delay/1000} seconds...`);
+        setTimeout(() => loadOrders(foodPartner, attempt + 1), delay);
+      } else {
+        alert('Failed to load orders. The server might be starting up. Please refresh in a moment.');
+        setOrders([]);
+        setRetrying(false);
+      }
     } finally {
+      if (!retrying) {
         setLoading(false);
+      }
     }
-    };
+  };
 
   const updateStatus = async (orderId: number, newStatus: OrderStatus, reason?: string) => {
     try {
@@ -127,12 +153,18 @@ interface Order {
       });
 
       if (response.ok) {
-        console.log(`✅ Order #${orderId} updated to ${newStatus}`);
+        const data = await response.json();
+        console.log(`✅ Order #${orderId} updated:`, data);
+        
         setOrders((prev) =>
           prev.map((o) =>
             o.id === orderId ? { ...o, status: newStatus, rejectReason: reason } : o
           )
         );
+        
+        if (userInfo?.food_partner) {
+          await loadOrders(userInfo.food_partner);
+        }
       } else {
         const errorData = await response.json();
         console.error('❌ Backend error:', errorData);
@@ -160,10 +192,27 @@ interface Order {
     window.location.href = 'http://localhost:3000/login';
   };
 
-  if (loading) {
+  // Filter orders based on active tab
+  const activeOrders = orders.filter(o => 
+    o.status === 'pending' || o.status === 'confirmed' || o.status === 'preparing' || o.status === 'ready'
+  );
+  
+  const historyOrders = orders.filter(o => 
+    o.status === 'completed' || o.status === 'cancelled'
+  );
+
+  if (loading || retrying) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-xl text-gray-700 font-medium">
+            {retrying ? `Server is waking up... (${retryCount}/5)` : 'Loading orders...'}
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            {retrying ? 'This may take up to 30 seconds' : 'Please wait'}
+          </p>
+        </div>
       </div>
     );
   }
@@ -173,7 +222,7 @@ interface Order {
       {/* Header */}
       <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-lg shadow">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">Incoming Orders</h1>
+          <h1 className="text-4xl font-bold text-gray-900">Orders Dashboard</h1>
           {userInfo && (
             <p className="text-gray-600 mt-2">
               {userInfo.food_partner} • Staff: {userInfo.username}
@@ -188,104 +237,153 @@ interface Order {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-4 mb-6">
+        <button
+          onClick={() => setActiveTab("active")}
+          className={`px-6 py-3 rounded-lg font-semibold transition ${
+            activeTab === "active"
+              ? "bg-orange-600 text-white shadow-lg"
+              : "bg-white text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          Active Orders ({activeOrders.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`px-6 py-3 rounded-lg font-semibold transition ${
+            activeTab === "history"
+              ? "bg-orange-600 text-white shadow-lg"
+              : "bg-white text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          History ({historyOrders.length})
+        </button>
+      </div>
+
       {/* Orders Grid */}
-      {orders.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <p className="text-gray-500 text-lg">No orders yet for {userInfo?.food_partner}</p>
-          <p className="text-gray-400 text-sm mt-2">Orders will appear here when customers place them</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {orders.map((order) => (
-            <div
-              key={order.id}
-              className="bg-white shadow-xl border rounded-2xl p-6 space-y-4"
-            >
-              <h2 className="text-2xl font-semibold">Order #{order.id}</h2>
-              <p className="text-sm text-gray-500">ID: {order.id}</p>
-              <p className="text-lg"><strong>Name:</strong> {order.name}</p>
-              <p className="text-lg"><strong>Item:</strong> {order.item}</p>
-              <p className="text-lg"><strong>Quantity:</strong> {order.quantity}</p>
-              <p className="text-lg font-semibold">Total Price: ₱{order.totalPrice}</p>
-              <p className="text-sm font-medium">
-                Status: <span className="text-orange-600 font-bold">{order.status.toUpperCase()}</span>
-              </p>
-
-              {/* Pending - Accept or Cancel */}
-              {order.status === "pending" && (
-                <div className="flex gap-3 pt-4">
-                  <button
-                    className="flex-1 border-2 border-green-600 text-green-600 px-4 py-2 rounded-lg hover:bg-green-600 hover:text-white transition font-semibold"
-                    onClick={() => updateStatus(order.id, "confirmed")}
-                  >
-                    Accept
-                  </button>
-                  <button
-                    className="flex-1 border-2 border-red-600 text-red-600 px-4 py-2 rounded-lg hover:bg-red-600 hover:text-white transition font-semibold"
-                    onClick={() => handleReject(order.id)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-
-              {/* Confirmed - Start Preparing */}
-              {order.status === "confirmed" && (
-                <button
-                  className="w-full border-2 border-green-600 text-green-600 px-4 py-2 rounded-lg hover:bg-green-600 hover:text-white transition font-semibold"
-                  onClick={() => updateStatus(order.id, "preparing")}
+      {activeTab === "active" && (
+        <>
+          {activeOrders.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow">
+              <p className="text-gray-500 text-lg">No active orders</p>
+              <p className="text-gray-400 text-sm mt-2">Orders will appear here when customers place them</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {activeOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="bg-white shadow-xl border rounded-2xl p-6 space-y-4"
                 >
-                  Start Preparing
-                </button>
-              )}
+                  <h2 className="text-2xl font-semibold">Order #{order.id}</h2>
+                  <p className="text-lg"><strong>Name:</strong> {order.name}</p>
+                  <p className="text-lg"><strong>Item:</strong> {order.item}</p>
+                  <p className="text-lg"><strong>Quantity:</strong> {order.quantity}</p>
+                  <p className="text-lg font-semibold">Total Price: ₱{order.totalPrice}</p>
+                  <p className="text-sm font-medium">
+                    Status: <span className="text-orange-600 font-bold">{order.status.toUpperCase()}</span>
+                  </p>
 
-              {/* Preparing - Mark Ready or Cancel */}
-              {order.status === "preparing" && (
-                <div className="flex gap-3 pt-4">
-                  <button
-                    className="flex-1 border-2 border-green-600 text-green-600 px-4 py-2 rounded-lg hover:bg-green-600 hover:text-white transition font-semibold"
-                    onClick={() => updateStatus(order.id, "ready")}
-                  >
-                    Ready for Pickup
-                  </button>
-                  <button
-                    className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-semibold"
-                    onClick={() => updateStatus(order.id, "cancelled")}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
+                  {order.status === "pending" && (
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        className="flex-1 border-2 border-green-600 text-green-600 px-4 py-2 rounded-lg hover:bg-green-600 hover:text-white transition font-semibold"
+                        onClick={() => updateStatus(order.id, "confirmed")}
+                      >
+                        Accept
+                      </button>
+                      <button
+                        className="flex-1 border-2 border-red-600 text-red-600 px-4 py-2 rounded-lg hover:bg-red-600 hover:text-white transition font-semibold"
+                        onClick={() => handleReject(order.id)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
 
-              {/* Ready - Mark Complete */}
-              {order.status === "ready" && (
-                <button
-                  className="w-full border-2 border-green-600 text-green-600 px-4 py-2 rounded-lg hover:bg-green-600 hover:text-white transition font-semibold"
-                  onClick={() => updateStatus(order.id, "completed")}
-                >
-                  Mark as Completed
-                </button>
-              )}
+                  {order.status === "confirmed" && (
+                    <button
+                      className="w-full border-2 border-green-600 text-green-600 px-4 py-2 rounded-lg hover:bg-green-600 hover:text-white transition font-semibold"
+                      onClick={() => updateStatus(order.id, "preparing")}
+                    >
+                      Start Preparing
+                    </button>
+                  )}
 
-              {/* Completed */}
-              {order.status === "completed" && (
-                <p className="text-green-600 font-semibold text-center py-2">✅ Completed</p>
-              )}
+                  {order.status === "preparing" && (
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        className="flex-1 border-2 border-green-600 text-green-600 px-4 py-2 rounded-lg hover:bg-green-600 hover:text-white transition font-semibold"
+                        onClick={() => updateStatus(order.id, "ready")}
+                      >
+                        Ready for Pickup
+                      </button>
+                      <button
+                        className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-semibold"
+                        onClick={() => updateStatus(order.id, "cancelled")}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
 
-              {/* Cancelled */}
-              {order.status === "cancelled" && (
-                <div className="space-y-1 bg-red-50 p-3 rounded">
-                  <p className="text-red-600 font-semibold">❌ Cancelled</p>
-                  {order.rejectReason && (
-                    <p className="text-sm text-gray-700">
-                      Reason: {order.rejectReason}
-                    </p>
+                  {order.status === "ready" && (
+                    <button
+                      className="w-full border-2 border-green-600 text-green-600 px-4 py-2 rounded-lg hover:bg-green-600 hover:text-white transition font-semibold"
+                      onClick={() => updateStatus(order.id, "completed")}
+                    >
+                      Mark as Completed
+                    </button>
                   )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
+      )}
+
+      {activeTab === "history" && (
+        <>
+          {historyOrders.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow">
+              <p className="text-gray-500 text-lg">No order history yet</p>
+              <p className="text-gray-400 text-sm mt-2">Completed and cancelled orders will appear here</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {historyOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="bg-white shadow-xl border rounded-2xl p-6 space-y-4"
+                >
+                  <h2 className="text-2xl font-semibold">Order #{order.id}</h2>
+                  <p className="text-lg"><strong>Name:</strong> {order.name}</p>
+                  <p className="text-lg"><strong>Item:</strong> {order.item}</p>
+                  <p className="text-lg"><strong>Quantity:</strong> {order.quantity}</p>
+                  <p className="text-lg font-semibold">Total Price: ₱{order.totalPrice}</p>
+
+                  {order.status === "completed" && (
+                    <div className="bg-green-50 p-3 rounded-lg">
+                      <p className="text-green-600 font-semibold text-center">✅ Completed</p>
+                    </div>
+                  )}
+
+                  {order.status === "cancelled" && (
+                    <div className="bg-red-50 p-3 rounded-lg">
+                      <p className="text-red-600 font-semibold">❌ Cancelled</p>
+                      {order.rejectReason && (
+                        <p className="text-sm text-gray-700 mt-2">
+                          Reason: {order.rejectReason}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

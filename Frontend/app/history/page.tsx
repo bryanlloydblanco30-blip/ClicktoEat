@@ -1,6 +1,5 @@
 'use client'
 
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { getOrders } from "../services/api";
 import { motion } from "framer-motion";
@@ -80,7 +79,10 @@ export default function HistoryPage() {
     return (
       <div className="min-h-screen p-6">
         <div className="flex items-center justify-center h-96">
-          <p className="text-xl text-gray-600">Loading order history...</p>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+            <p className="text-xl text-gray-600">Loading order history...</p>
+          </div>
         </div>
       </div>
     );
@@ -89,8 +91,10 @@ export default function HistoryPage() {
   return (
     <div className="min-h-screen p-6">
       <div className="flex items-center mb-6">
-        <Image src="/history-icon.png" height={30} width={30} alt="history icon" />
-        <h1 className="ml-3 text-2xl font-semibold">Order History</h1>
+        <svg className="w-8 h-8 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h1 className="text-2xl font-semibold">Order History</h1>
       </div>
 
       {orders.length > 0 ? (
@@ -123,7 +127,7 @@ export default function HistoryPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 text-sm text-gray-600">
+                <div className="flex gap-4 text-sm text-gray-600 flex-wrap">
                   <div className="flex items-center gap-1">
                     <span>📅</span>
                     <span>Pickup: {formatDate(order.pickup_date)}</span>
@@ -142,6 +146,14 @@ export default function HistoryPage() {
                   <span>{order.items.length} item(s)</span>
                   <span>•</span>
                   <span>Click to {expandedOrder === order.id ? 'hide' : 'view'} details</span>
+                  <svg 
+                    className={`w-4 h-4 transition-transform ${expandedOrder === order.id ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
               </div>
 

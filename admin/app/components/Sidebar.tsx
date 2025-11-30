@@ -14,8 +14,8 @@ export default function AdminSidebar() {
     localStorage.removeItem('cart_session_id');
     localStorage.removeItem('session_id');
     
-    // Redirect to frontend login
-    window.location.href = 'http://localhost:3000/login';
+    // Redirect and replace history to prevent back button
+    window.location.replace('https://clicktoeat-frontend.onrender.com/login');
   };
 
   const menuItems = [
