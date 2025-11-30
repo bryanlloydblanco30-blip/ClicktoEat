@@ -12,12 +12,20 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'uploadcare.com',
       },
-      {
-        source: '/admin-api/:path*',
-        destination: 'https://clickto-eat-rxo1-41618asb3-bryans-projects-e4c7e470.vercel.app/:path*',
-      }
+      // Add any other image hosting services you use
     ],
   },
-}
+  
+  // The rewrites function should be INSIDE the config object
+  async rewrites() {
+    return [
+      {
+        source: '/admin-api/:path*',
+        destination: 'https://clickto-eat-rxo1-ip41vktxo-bryans-projects-e4c7e470.vercel.app/:path*',
+      },
+    ];
+  },
+};
 
-module.exports = nextConfig
+// Use EITHER export default OR module.exports, not both
+export default nextConfig;
