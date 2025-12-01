@@ -50,41 +50,66 @@ export function hasRole(role) {
 // ==================== AUTHENTICATION FUNCTIONS ====================
 
 // Signup
+// Signup - Improved error handling
 export async function signup(username, email, password, role = 'member', foodPartner = '', fullName = '', srCode = '') {
-  const response = await fetch(`${ADMIN_API_URL}/api/auth/signup/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify({
-      username,
-      email,
-      password,
-      role,
-      food_partner: foodPartner,
-      full_name: fullName,
-      sr_code: srCode
-    })
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Signup failed');
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    
+    const response = await fetch(`${ADMIN_API_URL}/api/auth/signup/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        username,
+        email,
+        password,
+        role,
+        food_partner: foodPartner,
+        full_name: fullName,
+        sr_code: srCode
+      }),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Failed to parse signup response:', responseText);
+      throw new Error('Server returned invalid response');
+    }
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Signup failed');
+    }
+    
+    if (data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+    
+    return data;
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.');
+    }
+    throw err;
   }
-  const data = await response.json();
-  
-  if (data.user) {
-    localStorage.setItem('user', JSON.stringify(data.user));
-  }
-  
-  return data;
 }
 
 // Login - Simplified without CSRF
+// Login - Improved error handling
 export async function login(username, password) {
   try {
     console.log('🔐 Login attempt:', username);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
     
     const response = await fetch(`${ADMIN_API_URL}/api/auth/login/`, {
       method: 'POST',
@@ -93,18 +118,32 @@ export async function login(username, password) {
         'Accept': 'application/json',
       },
       credentials: 'include',
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password }),
+      signal: controller.signal
     });
     
+    clearTimeout(timeoutId);
     console.log('📡 Response status:', response.status);
+    console.log('📡 Response headers:', response.headers);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('❌ Login failed:', errorData);
-      throw new Error(errorData.error || 'Login failed');
+    // Get response text first to debug
+    const responseText = await response.text();
+    console.log('📡 Response body:', responseText);
+
+    // Try to parse as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('❌ Failed to parse JSON:', responseText);
+      throw new Error('Server returned invalid response. Please check backend logs.');
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      console.error('❌ Login failed:', data);
+      throw new Error(data.error || 'Login failed');
+    }
+
     console.log('✅ Login successful:', data);
 
     if (data.user) {
@@ -116,10 +155,12 @@ export async function login(username, password) {
     
   } catch (err) {
     console.error('❌ Login exception:', err);
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.');
+    }
     throw err;
   }
 }
-
 // Logout
 export async function logout() {
   const response = await apiFetch('/api/auth/logout/', {
