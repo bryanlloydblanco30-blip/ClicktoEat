@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { login } from '../services/api';
 
-// Use environment variable for admin URL
+// Admin app URL - update this to your actual admin deployment URL
 const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001';
 
 export default function LoginPage() {
@@ -34,50 +34,47 @@ export default function LoginPage() {
     console.log('🔐 Login attempt:', formData.username);
 
     try {
+      // Call the backend API (ADMIN_API_URL from api.js)
       const response = await login(formData.username, formData.password);
       console.log('✅ Login response:', response);
       
-      if (response.success) {
-        // Store user info
+      if (response.success && response.user) {
         const userData = response.user;
-        console.log('💾 Storing user data:', userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+        console.log('💾 User data received:', userData);
         
-        // Verify it was stored
+        // Store user info in localStorage
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('authToken', 'authenticated-' + Date.now());
+        
+        // Verify storage
         const storedUser = localStorage.getItem('user');
         console.log('✔️ Verified stored user:', storedUser);
         
         // Redirect based on role
         if (userData.role === 'admin') {
-          console.log('→ Admin detected - Passing user data via URL');
+          console.log('→ Admin role detected - Redirecting to admin app');
           
-          // Encode user data to pass to admin app
-          const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
-          const redirectUrl = `${ADMIN_URL}?user=${userDataEncoded}`;
+          // Option 1: Simple redirect (admin app will read from localStorage)
+          window.location.href = ADMIN_URL;
           
-          console.log('→ Redirecting to:', redirectUrl);
+          // Option 2: Pass data via URL parameter (if admin app needs it immediately)
+          // const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
+          // window.location.href = `${ADMIN_URL}?auth=success&user=${userDataEncoded}`;
           
-          // Small delay to ensure everything is ready
-          setTimeout(() => {
-            window.location.href = redirectUrl;
-          }, 100);
-          return;
         } else if (userData.role === 'staff') {
-          console.log('→ Staff - Redirecting to admin owner page');
+          console.log('→ Staff role detected - Redirecting to owner page');
           localStorage.setItem('food_partner', userData.food_partner);
           
-          // Redirect to the admin app (port 3001) with user data
-          const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
-          const redirectUrl = `${ADMIN_URL}/owner?user=${userDataEncoded}`;
+          // Redirect to staff/owner section in admin app
+          window.location.href = `${ADMIN_URL}/owner`;
           
-          setTimeout(() => {
-            window.location.href = redirectUrl;
-          }, 100);
-          return;
         } else {
-          console.log('→ Member - Redirecting to home');
+          // Member/client role - stay in client app
+          console.log('→ Member role - Redirecting to client home');
           router.push('/');
         }
+      } else {
+        setError('Login failed. Please check your credentials.');
       }
     } catch (err: any) {
       console.error('❌ Login error:', err);

@@ -7,45 +7,17 @@ import { motion } from "framer-motion";
 import dynamic from 'next/dynamic';
 import Image from "next/image";
 
-// Dynamically import charts with no SSR to prevent hydration errors
-const LineChart = dynamic(
-  () => import('recharts').then((mod) => mod.LineChart),
-  { ssr: false }
-);
-const Line = dynamic(
-  () => import('recharts').then((mod) => mod.Line),
-  { ssr: false }
-);
-const XAxis = dynamic(
-  () => import('recharts').then((mod) => mod.XAxis),
-  { ssr: false }
-);
-const YAxis = dynamic(
-  () => import('recharts').then((mod) => mod.YAxis),
-  { ssr: false }
-);
-const Tooltip = dynamic(
-  () => import('recharts').then((mod) => mod.Tooltip),
-  { ssr: false }
-);
-const CartesianGrid = dynamic(
-  () => import('recharts').then((mod) => mod.CartesianGrid),
-  { ssr: false }
-);
-const BarChart = dynamic(
-  () => import('recharts').then((mod) => mod.BarChart),
-  { ssr: false }
-);
-const Bar = dynamic(
-  () => import('recharts').then((mod) => mod.Bar),
-  { ssr: false }
-);
-const ResponsiveContainer = dynamic(
-  () => import('recharts').then((mod) => mod.ResponsiveContainer),
-  { ssr: false }
-);
+// Dynamically import charts with no SSR
+const LineChart = dynamic(() => import('recharts').then((mod) => mod.LineChart), { ssr: false });
+const Line = dynamic(() => import('recharts').then((mod) => mod.Line), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then((mod) => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then((mod) => mod.YAxis), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then((mod) => mod.Tooltip), { ssr: false });
+const CartesianGrid = dynamic(() => import('recharts').then((mod) => mod.CartesianGrid), { ssr: false });
+const BarChart = dynamic(() => import('recharts').then((mod) => mod.BarChart), { ssr: false });
+const Bar = dynamic(() => import('recharts').then((mod) => mod.Bar), { ssr: false });
+const ResponsiveContainer = dynamic(() => import('recharts').then((mod) => mod.ResponsiveContainer), { ssr: false });
 
-// Type definitions
 type SalesByDay = {
   name: string;
   sales: number;
@@ -70,11 +42,12 @@ type Stats = {
   ordersByStatus: OrdersByStatus[];
 };
 
-// API call
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clicktoeat-pw67.onrender.com';
 
 async function getAllOrders() {
-  const response = await fetch(`${API_BASE_URL}/api/admin/orders/`);
+  const response = await fetch(`${API_BASE_URL}/api/admin/orders/`, {
+    credentials: 'include',
+  });
   if (!response.ok) throw new Error('Failed to fetch orders');
   return response.json();
 }
@@ -95,9 +68,18 @@ export default function Dashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     setIsClient(true);
+    
+    // Get user from localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      setUser(JSON.parse(userStr));
+    }
+    
     fetchDashboardData();
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
@@ -105,8 +87,11 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
+      console.log('📊 Fetching dashboard data...');
       const data = await getAllOrders();
       const orders = data.orders || [];
+      
+      console.log(`✅ Loaded ${orders.length} orders`);
       
       const pending = orders.filter((o: any) => o.status === 'pending').length;
       const confirmed = orders.filter((o: any) => o.status === 'confirmed').length;
@@ -147,8 +132,10 @@ export default function Dashboard() {
       });
       
       setLoading(false);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      setError(null);
+    } catch (error: any) {
+      console.error('❌ Error fetching dashboard data:', error);
+      setError(error.message);
       setLoading(false);
     }
   };
@@ -193,7 +180,7 @@ export default function Dashboard() {
     return topProduct;
   };
 
-  const cardStyle = "rounded-2xl shadow-md p-4 flex flex-col gap-2 bg-white";
+  const cardStyle = "rounded-2xl shadow-md p-4 flex flex-col gap-2 bg-white hover:shadow-lg transition-shadow duration-200";
 
   if (loading) {
     return (
@@ -206,8 +193,40 @@ export default function Dashboard() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen w-full">
+        <div className="text-center bg-red-50 border border-red-200 rounded-lg p-8 max-w-md">
+          <p className="text-red-600 font-semibold text-lg mb-2">Error Loading Dashboard</p>
+          <p className="text-red-500 text-sm">{error}</p>
+          <button 
+            onClick={fetchDashboardData}
+            className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <main className="w-full">
+      {/* Welcome Message */}
+      {user && (
+        <div className="mb-6 bg-white rounded-xl shadow-sm p-4 border-l-4 border-red-500">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Welcome back, {user.full_name || user.username}! 👋
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {user.role === 'admin' 
+              ? 'Here\'s your restaurant overview' 
+              : `Managing orders for ${user.food_partner}`
+            }
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center mb-6">
         <Image src="/grid.png" height={30} width={30} alt="dashboard icon" />
         <h1 className="ml-3 text-xl md:text-2xl font-semibold">Dashboard</h1>
@@ -220,7 +239,7 @@ export default function Dashboard() {
               <CardTitle className="text-base md:text-xl font-semibold">Pending Orders</CardTitle>
               <Clock className="h-5 w-5 md:h-6 md:w-6" color="#FF0000" />
             </CardHeader>
-            <CardContent className="mt-4 text-3xl md:text-4xl font-bold p-0">
+            <CardContent className="mt-4 text-3xl md:text-4xl font-bold p-0 text-red-600">
               {stats.pending}
             </CardContent>
           </Card>
@@ -230,9 +249,9 @@ export default function Dashboard() {
           <Card className={cardStyle}>
             <CardHeader className="flex flex-row items-center justify-between p-0">
               <CardTitle className="text-base md:text-xl font-semibold">Completed</CardTitle>
-              <CheckCircle className="h-5 w-5 md:h-6 md:w-6" color="#FF0000"/>
+              <CheckCircle className="h-5 w-5 md:h-6 md:w-6" color="#10B981"/>
             </CardHeader>
-            <CardContent className="mt-4 text-3xl md:text-4xl font-bold p-0">
+            <CardContent className="mt-4 text-3xl md:text-4xl font-bold p-0 text-green-600">
               {stats.completed}
             </CardContent>
           </Card>
@@ -242,9 +261,9 @@ export default function Dashboard() {
           <Card className={cardStyle}>
             <CardHeader className="flex flex-row items-center justify-between p-0">
               <CardTitle className="text-base md:text-xl font-semibold">Total Orders</CardTitle>
-              <Users className="h-5 w-5 md:h-6 md:w-6" color="#e7000b" />
+              <Users className="h-5 w-5 md:h-6 md:w-6" color="#3B82F6" />
             </CardHeader>
-            <CardContent className="mt-4 text-3xl md:text-4xl font-bold p-0">
+            <CardContent className="mt-4 text-3xl md:text-4xl font-bold p-0 text-blue-600">
               {stats.totalOrders}
             </CardContent>
           </Card>
@@ -308,7 +327,7 @@ export default function Dashboard() {
           <CardHeader className="p-0 mb-2">
             <CardTitle className="text-base md:text-xl font-semibold">Total Sales Today</CardTitle>
           </CardHeader>
-          <CardContent className="p-0 text-2xl md:text-4xl font-bold">
+          <CardContent className="p-0 text-2xl md:text-4xl font-bold text-green-600">
             ₱{stats.salesToday.toFixed(2)}
           </CardContent>
         </Card>
@@ -317,7 +336,7 @@ export default function Dashboard() {
           <CardHeader className="p-0 mb-2">
             <CardTitle className="text-base md:text-xl font-semibold">Top Product</CardTitle>
           </CardHeader>
-          <CardContent className="p-0 mt-4 text-lg md:text-2xl font-semibold break-words">
+          <CardContent className="p-0 mt-4 text-lg md:text-2xl font-semibold break-words text-gray-700">
             {stats.topProduct}
           </CardContent>
         </Card>
