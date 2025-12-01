@@ -11,6 +11,7 @@ from urllib.parse import unquote
 
 # ==================== AUTHENTICATION VIEWS ====================
 
+@csrf_exempt  # Add this line
 @require_http_methods(["POST"])
 def signup_view(request):
     """User signup"""
@@ -80,6 +81,7 @@ def signup_view(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+@csrf_exempt  # Add this line
 @require_http_methods(["POST"])
 def login_view(request):
     """User login"""
@@ -133,7 +135,6 @@ def login_view(request):
         import traceback
         traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
-
 
 @require_http_methods(["POST"])
 def logout_view(request):
