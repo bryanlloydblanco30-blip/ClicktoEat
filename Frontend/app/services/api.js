@@ -3,34 +3,11 @@ const ADMIN_API_URL = 'https://clicktoeat-pw67.onrender.com';
 
 // ==================== HELPER FUNCTIONS ====================
 
-// Get CSRF token from cookies
-function getCsrfToken() {
-  if (typeof document === 'undefined') return null;
-  
-  const name = 'csrftoken';
-  const cookies = document.cookie.split(';');
-  
-  for (let cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.trim().split('=');
-    if (cookieName === name) {
-      return cookieValue;
-    }
-  }
-  return null;
-}
-
-// Generic fetch wrapper with CSRF token
+// Generic fetch wrapper WITHOUT CSRF
 async function apiFetch(url, options = {}) {
-  const csrfToken = getCsrfToken();
-  
   const defaultHeaders = {
     'Content-Type': 'application/json',
   };
-  
-  // Add CSRF token if available
-  if (csrfToken) {
-    defaultHeaders['X-CSRFToken'] = csrfToken;
-  }
 
   const config = {
     ...options,
@@ -38,7 +15,7 @@ async function apiFetch(url, options = {}) {
       ...defaultHeaders,
       ...options.headers,
     },
-    credentials: 'include', // Always include credentials
+    credentials: 'include',
   };
 
   const response = await fetch(`${API_BASE_URL}${url}`, config);
@@ -72,30 +49,12 @@ export function hasRole(role) {
 
 // ==================== AUTHENTICATION FUNCTIONS ====================
 
-// Get CSRF token from backend
-async function fetchCsrfToken() {
-  try {
-    const response = await fetch(`${ADMIN_API_URL}/api/auth/check/`, {
-      credentials: 'include'
-    });
-    // This will set the CSRF cookie
-    return true;
-  } catch (error) {
-    console.error('Failed to fetch CSRF token:', error);
-    return false;
-  }
-}
-
 // Signup
 export async function signup(username, email, password, role = 'member', foodPartner = '', fullName = '', srCode = '') {
-  // Get CSRF token first
-  await fetchCsrfToken();
-  
   const response = await fetch(`${ADMIN_API_URL}/api/auth/signup/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-CSRFToken': getCsrfToken() || '',
     },
     credentials: 'include',
     body: JSON.stringify({
@@ -115,7 +74,6 @@ export async function signup(username, email, password, role = 'member', foodPar
   }
   const data = await response.json();
   
-  // Store user info in localStorage
   if (data.user) {
     localStorage.setItem('user', JSON.stringify(data.user));
   }
@@ -123,56 +81,35 @@ export async function signup(username, email, password, role = 'member', foodPar
   return data;
 }
 
-// Login - USES PROXY TO AVOID CORS ISSUES
-// Login function with better error handling and URL construction
+// Login - Simplified without CSRF
 export async function login(username, password) {
   try {
-    const loginUrl = `${ADMIN_API_URL}/api/auth/login/`;
+    console.log('🔐 Login attempt:', username);
     
-    console.log('🎯 Login URL:', loginUrl);
-    
-    // Get CSRF token first
-    await fetchCsrfToken();
-    const csrfToken = getCsrfToken();
-    
-    const response = await fetch(loginUrl, {
+    const response = await fetch(`${ADMIN_API_URL}/api/auth/login/`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        ...(csrfToken && { 'X-CSRFToken': csrfToken }),
+        'Accept': 'application/json',
       },
       credentials: 'include',
       body: JSON.stringify({ username, password })
     });
     
     console.log('📡 Response status:', response.status);
-    
-    // Check if response is HTML (wrong endpoint)
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('text/html')) {
-      console.error('❌ Received HTML instead of JSON - wrong endpoint or CORS issue');
-      throw new Error('Server configuration error - received HTML instead of JSON');
-    }
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Error response:', errorText);
-      
-      let error;
-      try {
-        error = JSON.parse(errorText);
-      } catch (e) {
-        throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
-      }
-      
-      throw new Error(error.error || error.message || 'Login failed');
+      const errorData = await response.json();
+      console.error('❌ Login failed:', errorData);
+      throw new Error(errorData.error || 'Login failed');
     }
 
     const data = await response.json();
-    console.log('✅ Login successful');
+    console.log('✅ Login successful:', data);
 
     if (data.user) {
       localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('authToken', 'authenticated-' + Date.now());
     }
 
     return data;
@@ -182,6 +119,7 @@ export async function login(username, password) {
     throw err;
   }
 }
+
 // Logout
 export async function logout() {
   const response = await apiFetch('/api/auth/logout/', {
@@ -192,8 +130,8 @@ export async function logout() {
     throw new Error('Logout failed');
   }
   
-  // Clear user info from localStorage
   localStorage.removeItem('user');
+  localStorage.removeItem('authToken');
   
   return response.json();
 }
@@ -204,14 +142,12 @@ export async function checkAuth() {
     const response = await apiFetch('/api/auth/check/');
     
     if (!response.ok) {
-      // Clear localStorage if auth check fails
       localStorage.removeItem('user');
       return { authenticated: false, user: null };
     }
     
     const data = await response.json();
     
-    // Update localStorage with current user data
     if (data.authenticated && data.user) {
       localStorage.setItem('user', JSON.stringify(data.user));
     } else {
@@ -238,7 +174,6 @@ export async function isAuthenticated() {
 
 // ==================== CART FUNCTIONS ====================
 
-// Get cart - works for both authenticated and guest users
 export async function getCart() {
   const sessionId = getSessionId();
   const response = await apiFetch(`/api/cart/?session_id=${sessionId}`);
@@ -249,7 +184,6 @@ export async function getCart() {
   return response.json();
 }
 
-// Add to cart
 export async function addToCart(menuItemId, quantity = 1) {
   const response = await apiFetch('/api/cart/add/', {
     method: 'POST',
@@ -266,7 +200,6 @@ export async function addToCart(menuItemId, quantity = 1) {
   return response.json();
 }
 
-// Update cart item
 export async function updateCartItem(itemId, quantity) {
   const response = await apiFetch(`/api/cart/update/${itemId}/`, {
     method: 'PUT',
@@ -279,7 +212,6 @@ export async function updateCartItem(itemId, quantity) {
   return response.json();
 }
 
-// Remove from cart
 export async function removeFromCart(itemId) {
   const response = await apiFetch(`/api/cart/remove/${itemId}/`, {
     method: 'DELETE'
@@ -293,7 +225,6 @@ export async function removeFromCart(itemId) {
 
 // ==================== ORDER FUNCTIONS ====================
 
-// Create order - requires authentication
 export async function createOrder(orderData) {
   const response = await apiFetch('/api/orders/create/', {
     method: 'POST',
@@ -310,7 +241,6 @@ export async function createOrder(orderData) {
   return response.json();
 }
 
-// Get orders - requires authentication
 export async function getOrders() {
   const sessionId = getSessionId();
   const response = await apiFetch(`/api/orders/?session_id=${sessionId}`);
@@ -327,7 +257,6 @@ export async function getOrders() {
 
 // ==================== FAVORITE FUNCTIONS ====================
 
-// Add to favorites
 export async function addFavorite(menuItemId) {
   const response = await apiFetch('/api/favorites/add/', {
     method: 'POST',
@@ -343,7 +272,6 @@ export async function addFavorite(menuItemId) {
   return response.json();
 }
 
-// Remove from favorites
 export async function removeFavorite(menuItemId) {
   const sessionId = getSessionId();
   const response = await apiFetch(
@@ -357,7 +285,6 @@ export async function removeFavorite(menuItemId) {
   return response.json();
 }
 
-// Get all favorites
 export async function getFavorites() {
   const sessionId = getSessionId();
   const response = await apiFetch(`/api/favorites/?session_id=${sessionId}`);
@@ -368,7 +295,6 @@ export async function getFavorites() {
   return response.json();
 }
 
-// Get favorite IDs
 export async function getFavoriteIds() {
   const sessionId = getSessionId();
   const response = await apiFetch(`/api/favorites/ids/?session_id=${sessionId}`);
@@ -381,7 +307,6 @@ export async function getFavoriteIds() {
 
 // ==================== MENU FUNCTIONS ====================
 
-// Get all available menu items
 export async function getMenuItems() {
   const response = await apiFetch('/api/menu/');
   
@@ -391,7 +316,6 @@ export async function getMenuItems() {
   return response.json();
 }
 
-// Get menu item by ID
 export async function getMenuItemById(id) {
   const response = await apiFetch(`/api/menu/${id}/`);
   
@@ -404,7 +328,6 @@ export async function getMenuItemById(id) {
 
 // ==================== FOOD PARTNER FUNCTIONS ====================
 
-// Get all food partners
 export async function getFoodPartners() {
   const response = await apiFetch('/api/partners/');
   
@@ -412,7 +335,6 @@ export async function getFoodPartners() {
   return response.json();
 }
 
-// Get menu items for a specific partner
 export async function getPartnerMenuItems(partnerName) {
   if (!partnerName || partnerName === 'undefined') {
     console.error('Invalid partner name:', partnerName);
@@ -432,7 +354,6 @@ export async function getPartnerMenuItems(partnerName) {
 
 // ==================== ADMIN FUNCTIONS ====================
 
-// Get all menu items (Admin)
 export async function getAllMenuItemsAdmin() {
   const response = await apiFetch('/api/admin/menu/');
   
@@ -442,7 +363,6 @@ export async function getAllMenuItemsAdmin() {
   return response.json();
 }
 
-// Create menu item (Admin)
 export async function createMenuItem(itemData) {
   const response = await apiFetch('/api/admin/menu/create/', {
     method: 'POST',
@@ -455,7 +375,6 @@ export async function createMenuItem(itemData) {
   return response.json();
 }
 
-// Update menu item (Admin)
 export async function updateMenuItem(itemId, itemData) {
   const response = await apiFetch(`/api/admin/menu/update/${itemId}/`, {
     method: 'PUT',
@@ -468,7 +387,6 @@ export async function updateMenuItem(itemId, itemData) {
   return response.json();
 }
 
-// Delete menu item (Admin)
 export async function deleteMenuItem(itemId) {
   const response = await apiFetch(`/api/admin/menu/delete/${itemId}/`, {
     method: 'DELETE'
@@ -480,7 +398,6 @@ export async function deleteMenuItem(itemId) {
   return response.json();
 }
 
-// Get all orders (Admin)
 export async function getAllOrders() {
   const response = await apiFetch('/api/admin/orders/');
   
@@ -488,7 +405,6 @@ export async function getAllOrders() {
   return response.json();
 }
 
-// Update order status (Admin)
 export async function updateOrderStatus(orderId, status) {
   const response = await apiFetch(`/api/admin/orders/${orderId}/status/`, {
     method: 'PATCH',
@@ -497,4 +413,4 @@ export async function updateOrderStatus(orderId, status) {
   
   if (!response.ok) throw new Error('Failed to update order status');
   return response.json();
-} 
+}

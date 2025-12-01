@@ -2,27 +2,15 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.db.models import F, Sum
 import json
 from .models import MenuItem, Cart, CartItem, Order, OrderItem, Favorite
 from datetime import datetime
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.decorators.http import require_http_methods
 from urllib.parse import unquote
-
-from django.shortcuts import render
-from django.http import JsonResponse
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
-from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
-from django.views.decorators.http import require_http_methods
-import json
 
 # ==================== AUTHENTICATION VIEWS ====================
 
-@ensure_csrf_cookie
 @require_http_methods(["POST"])
 def signup_view(request):
     """User signup"""
@@ -92,11 +80,8 @@ def signup_view(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@csrf_exempt  # Add this temporarily
-@ensure_csrf_cookie
 @require_http_methods(["POST"])
 def login_view(request):
-    # ... rest of your code
     """User login"""
     try:
         print("=" * 50)
@@ -150,7 +135,6 @@ def login_view(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@ensure_csrf_cookie
 @require_http_methods(["POST"])
 def logout_view(request):
     """User logout"""
@@ -164,10 +148,9 @@ def logout_view(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@ensure_csrf_cookie
 @require_http_methods(["GET"])
 def check_auth(request):
-    """Check if user is authenticated - FIXED: Only ONE definition"""
+    """Check if user is authenticated"""
     if request.user.is_authenticated:
         try:
             profile = request.user.profile
@@ -214,7 +197,7 @@ def get_menu_items(request):
         'price': str(item.price),
         'image_url': item.image_url,
         'category': item.category,
-        'food_partner': item.food_partner,  # ADD THIS
+        'food_partner': item.food_partner,
     } for item in items]
     return JsonResponse({'items': data})
 
@@ -228,13 +211,12 @@ def get_all_menu_items_admin(request):
         'price': str(item.price),
         'image_url': item.image_url,
         'category': item.category,
-        'food_partner': item.food_partner,  # ADD THIS
+        'food_partner': item.food_partner,
         'available': item.available,
         'created_at': item.created_at.isoformat()
     } for item in items]
     return JsonResponse({'items': data})
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def create_menu_item(request):
     """Create a new menu item (admin)"""
@@ -246,7 +228,7 @@ def create_menu_item(request):
             price=data.get('price'),
             image_url=data.get('image_url', ''),
             category=data.get('category', ''),
-            food_partner=data.get('food_partner', ''),  # ADD THIS
+            food_partner=data.get('food_partner', ''),
             available=data.get('available', True)
         )
         return JsonResponse({
@@ -258,14 +240,13 @@ def create_menu_item(request):
                 'price': str(menu_item.price),
                 'image_url': menu_item.image_url,
                 'category': menu_item.category,
-                'food_partner': menu_item.food_partner,  # ADD THIS
+                'food_partner': menu_item.food_partner,
                 'available': menu_item.available
             }
         }, status=201)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-@csrf_exempt
 @require_http_methods(["PUT"])
 def update_menu_item(request, item_id):
     """Update a menu item (admin)"""
@@ -277,7 +258,7 @@ def update_menu_item(request, item_id):
         menu_item.price = data.get('price', menu_item.price)
         menu_item.image_url = data.get('image_url', menu_item.image_url)
         menu_item.category = data.get('category', menu_item.category)
-        menu_item.food_partner = data.get('food_partner', menu_item.food_partner)  # ADD THIS
+        menu_item.food_partner = data.get('food_partner', menu_item.food_partner)
         menu_item.available = data.get('available', menu_item.available)
         menu_item.save()
         return JsonResponse({
@@ -289,7 +270,7 @@ def update_menu_item(request, item_id):
                 'price': str(menu_item.price),
                 'image_url': menu_item.image_url,
                 'category': menu_item.category,
-                'food_partner': menu_item.food_partner,  # ADD THIS
+                'food_partner': menu_item.food_partner,
                 'available': menu_item.available
             }
         })
@@ -298,13 +279,6 @@ def update_menu_item(request, item_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from .models import MenuItem, CartItem, OrderItem
-import json
-
-@csrf_exempt
 @require_http_methods(["DELETE"])
 def delete_menu_item(request, item_id):
     """Delete a menu item (admin)"""
@@ -344,7 +318,6 @@ def delete_menu_item(request, item_id):
 
 # ==================== CART VIEWS ====================
 
-@csrf_exempt
 def get_cart(request):
     """Get cart contents for a session"""
     try:
@@ -384,7 +357,6 @@ def get_cart(request):
         print(f"Error getting cart: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def add_to_cart(request):
     """Add an item to the cart"""
@@ -441,7 +413,6 @@ def add_to_cart(request):
         traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
 
-@csrf_exempt
 @require_http_methods(["PUT"])
 def update_cart_item(request, item_id):
     """Update quantity of a cart item"""
@@ -469,7 +440,6 @@ def update_cart_item(request, item_id):
         print(f"Error updating cart item: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
-@csrf_exempt
 @require_http_methods(["DELETE"])
 def remove_from_cart(request, item_id):
     """Remove an item from the cart"""
@@ -490,7 +460,6 @@ def remove_from_cart(request, item_id):
         print(f"Error removing from cart: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
-@csrf_exempt
 @require_http_methods(["DELETE"])
 def remove_from_cart_by_menu_item(request):
     """Remove an item from cart by menu_item_id and session_id"""
@@ -520,13 +489,9 @@ def remove_from_cart_by_menu_item(request):
     except Exception as e:
         print(f"Error removing from cart: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
-    
-    # views.py - Add these functions
 
+# ==================== ORDER VIEWS ====================
 
-from datetime import datetime
-
-@csrf_exempt
 @require_http_methods(["POST"])
 def create_order(request):
     """Create a new order from cart"""
@@ -542,7 +507,7 @@ def create_order(request):
         payment_method = data.get('payment_method')
         tip_amount = data.get('tip', 0)
         pickup_datetime = data.get('pickup_time')
-        customer_name = data.get('customer_name', '')  # NEW: Get customer name from request
+        customer_name = data.get('customer_name', '')
         
         print(f"Session ID: {session_id}")
         print(f"Customer Name: {customer_name}")
@@ -580,7 +545,7 @@ def create_order(request):
         # Create order
         order = Order.objects.create(
             session_id=session_id,
-            customer_name=customer_name,  # NEW: Save customer name
+            customer_name=customer_name,
             total_amount=cart.total_price,
             tip_amount=tip_amount,
             payment_method=payment_method,
@@ -662,11 +627,9 @@ def get_orders(request):
     except Exception as e:
         print(f"Error getting orders: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
-    
-    
-# Add these functions to your views.py
 
-@csrf_exempt
+# ==================== FAVORITE VIEWS ====================
+
 @require_http_methods(["POST"])
 def add_favorite(request):
     """Add item to favorites"""
@@ -699,8 +662,6 @@ def add_favorite(request):
         print(f"Error adding favorite: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
-
-@csrf_exempt
 @require_http_methods(["DELETE"])
 def remove_favorite(request):
     """Remove item from favorites"""
@@ -728,7 +689,6 @@ def remove_favorite(request):
     except Exception as e:
         print(f"Error removing favorite: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
-
 
 def get_favorites(request):
     """Get all favorites for a session"""
@@ -760,7 +720,6 @@ def get_favorites(request):
         print(f"Error getting favorites: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
-
 def get_favorite_ids(request):
     """Get just the menu item IDs that are favorited (for quick checking)"""
     try:
@@ -778,10 +737,8 @@ def get_favorite_ids(request):
     except Exception as e:
         print(f"Error getting favorite IDs: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
-    
-    # views.py - Add these functions
 
-# Add to your views.py
+# ==================== FOOD PARTNER VIEWS ====================
 
 def get_food_partners(request):
     """Get all active food partners with their menu items"""
@@ -924,7 +881,6 @@ def get_partner_orders(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@csrf_exempt
 @require_http_methods(["PATCH"])
 def update_partner_order_status(request, order_id):
     """Update order status (Partner Staff)"""
@@ -997,7 +953,7 @@ def get_all_orders_admin(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@csrf_exempt
+
 @require_http_methods(["PATCH"])
 def update_order_status(request, order_id):
     """Update order status (for API compatibility - but admin panel is now read-only)"""
