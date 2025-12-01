@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { getPartnerOrders, updatePartnerOrderStatus } from '../services/api';
 
 type OrderStatus =
   | "pending"
@@ -78,110 +79,85 @@ function OwnerContent() {
     }
   }, [searchParams]);
 
-  const loadOrders = async (foodPartner: string, attempt: number = 1) => {
-    try {
-      console.log(`🔍 Loading orders for: ${foodPartner} (Attempt ${attempt})`);
-      
-      const url = `https://clicktoeat-pw67.onrender.com/api/partner/orders/?partner=${encodeURIComponent(foodPartner)}`;
-      console.log('📡 Fetching from:', url);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.status === 503) {
-        throw new Error('SERVICE_UNAVAILABLE');
-      }
-      
-      if (!response.ok) {
-        console.error('❌ Backend error:', response.status, response.statusText);
-        throw new Error(`Backend returned ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('📦 Backend response:', data);
-      
-      if (!data.orders || data.orders.length === 0) {
-        console.log('ℹ️ No orders found for this partner');
-        setOrders([]);
-        setLoading(false);
-        setRetrying(false);
-        return;
-      }
-      
-      // ✅ Updated transformation to preserve customer_name
-      const transformedOrders = data.orders.map((order: any) => ({
-        id: order.id,
-        customer_name: order.customer_name || 'Guest',  // ✅ Use customer_name from backend
-        item: order.items.map((i: any) => i.name).join(', '),
-        quantity: order.items.reduce((sum: number, i: any) => sum + i.quantity, 0),
-        totalPrice: parseFloat(order.total),
-        status: order.status as OrderStatus,
-        pickup_date: order.pickup_date,  // ✅ Added
-        pickup_time: order.pickup_time   // ✅ Added
-      }));
-      
-      console.log('✅ Transformed orders:', transformedOrders);
-      setOrders(transformedOrders);
+
+
+// In your loadOrders function:
+const loadOrders = async (foodPartner: string, attempt: number = 1) => {
+  try {
+    console.log(`🔍 Loading orders for: ${foodPartner} (Attempt ${attempt})`);
+    
+    const data = await getPartnerOrders(foodPartner);
+    console.log('📦 Backend response:', data);
+    
+    if (!data.orders || data.orders.length === 0) {
+      console.log('ℹ️ No orders found for this partner');
+      setOrders([]);
+      setLoading(false);
       setRetrying(false);
-      setRetryCount(0);
-    } catch (error: any) {
-      console.error('❌ Error loading orders:', error);
-      
-      if (error.message === 'SERVICE_UNAVAILABLE' && attempt < 5) {
-        setRetrying(true);
-        setRetryCount(attempt);
-        const delay = attempt * 3000;
-        console.log(`⏳ Retrying in ${delay/1000} seconds...`);
-        setTimeout(() => loadOrders(foodPartner, attempt + 1), delay);
-      } else {
-        alert('Failed to load orders. The server might be starting up. Please refresh in a moment.');
-        setOrders([]);
-        setRetrying(false);
-      }
-    } finally {
-      if (!retrying) {
-        setLoading(false);
-      }
+      return;
     }
-  };
-
-  const updateStatus = async (orderId: number, newStatus: OrderStatus, reason?: string) => {
-    try {
-      console.log(`🔄 Updating order #${orderId} to ${newStatus}`);
-      
-      const response = await fetch(`https://clicktoeat-pw67.onrender.com/api/partner/orders/${orderId}/status/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`✅ Order #${orderId} updated:`, data);
-        
-        setOrders((prev) =>
-          prev.map((o) =>
-            o.id === orderId ? { ...o, status: newStatus, rejectReason: reason } : o
-          )
-        );
-        
-        if (userInfo?.food_partner) {
-          await loadOrders(userInfo.food_partner);
-        }
-      } else {
-        const errorData = await response.json();
-        console.error('❌ Backend error:', errorData);
-        alert('Failed to update order status');
-      }
-    } catch (error) {
-      console.error('❌ Error updating status:', error);
-      alert('Failed to update order status');
+    
+    // Transform orders from backend format to frontend format
+    const transformedOrders = data.orders.map((order: any) => ({
+      id: order.id,
+      customer_name: order.customer_name || 'Guest',
+      item: order.items.map((i: any) => i.name).join(', '),
+      quantity: order.items.reduce((sum: number, i: any) => sum + i.quantity, 0),
+      totalPrice: parseFloat(order.total),
+      status: order.status as OrderStatus,
+      pickup_date: order.pickup_date,
+      pickup_time: order.pickup_time
+    }));
+    
+    console.log('✅ Transformed orders:', transformedOrders);
+    setOrders(transformedOrders);
+    setRetrying(false);
+    setRetryCount(0);
+  } catch (error: any) {
+    console.error('❌ Error loading orders:', error);
+    
+    if (error.message === 'SERVICE_UNAVAILABLE' && attempt < 5) {
+      setRetrying(true);
+      setRetryCount(attempt);
+      const delay = attempt * 3000;
+      console.log(`⏳ Retrying in ${delay/1000} seconds...`);
+      setTimeout(() => loadOrders(foodPartner, attempt + 1), delay);
+    } else {
+      alert('Failed to load orders. The server might be starting up. Please refresh in a moment.');
+      setOrders([]);
+      setRetrying(false);
     }
-  };
+  } finally {
+    if (!retrying) {
+      setLoading(false);
+    }
+  }
+};
+
+// In your updateStatus function:
+const updateStatus = async (orderId: number, newStatus: OrderStatus, reason?: string) => {
+  try {
+    console.log(`🔄 Updating order #${orderId} to ${newStatus}`);
+    
+    const data = await updatePartnerOrderStatus(orderId, newStatus);
+    console.log(`✅ Order #${orderId} updated:`, data);
+    
+    // Update local state
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId ? { ...o, status: newStatus, rejectReason: reason } : o
+      )
+    );
+    
+    // Reload orders from backend to ensure sync
+    if (userInfo?.food_partner) {
+      await loadOrders(userInfo.food_partner);
+    }
+  } catch (error) {
+    console.error('❌ Error updating status:', error);
+    alert('Failed to update order status');
+  }
+};
 
   const handleReject = (orderId: number) => {
     const reason = prompt(`Please enter the reason for cancelling Order #${orderId}:`);

@@ -1,59 +1,17 @@
-// Frontend/app/services/api.js
+// Admin/app/services/api.js
 // Enhanced and Extended API service
 
 // ==================== CONFIGURATION ====================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clicktoeat-pw67.onrender.com';
+// CRITICAL FIX: Force the correct backend URL
+const API_BASE_URL = 'https://clicktoeat-pw67.onrender.com';
 
-// Validation check
-if (!API_BASE_URL.startsWith('http')) {
-  console.error('❌ CRITICAL: API_BASE_URL must be a full URL starting with http/https');
-  console.error('Current value:', API_BASE_URL);
-  throw new Error('Invalid API_BASE_URL configuration');
-}
-
-console.log('🌐 Admin API Configuration:', {
-  API_BASE_URL,
-  environment: process.env.NODE_ENV,
-  hasEnvVar: !!process.env.NEXT_PUBLIC_API_URL
-});;
-
-// ==================== SESSION MANAGEMENT ====================
-export function getSessionId() {
-  if (typeof window === 'undefined') return null;
-  
-  let sessionId = localStorage.getItem('cart_session_id');
-  if (!sessionId) {
-    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('cart_session_id', sessionId);
-    console.log('🆔 New session created:', sessionId);
-  }
-  return sessionId;
-}
-
-export function clearSession() {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem('cart_session_id');
-  console.log('🗑️ Session cleared');
-}
-
-// Admin/app/services/api.js
-
-// ==================== CONFIGURATION ====================
-// CRITICAL FIX: Always use the full backend URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clicktoeat-pw67.onrender.com';
-
-// Runtime validation to catch issues early
+// Runtime validation
 if (typeof window !== 'undefined') {
-  console.log('🔍 API Configuration Check:');
-  console.log('  NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-  console.log('  API_BASE_URL:', API_BASE_URL);
-  console.log('  Should be: https://clicktoeat-pw67.onrender.com');
-  
-  // Warn if using relative paths
-  if (!API_BASE_URL.startsWith('http')) {
-    console.error('❌ CRITICAL ERROR: API_BASE_URL is not a full URL!');
-    console.error('Current value:', API_BASE_URL);
-  }
+  console.log('🌐 Admin API Configuration:', {
+    API_BASE_URL,
+    environment: process.env.NODE_ENV,
+    envVarValue: process.env.NEXT_PUBLIC_API_URL
+  });
 }
 
 // ==================== HELPER FUNCTIONS ====================
@@ -95,81 +53,6 @@ export function clearSession() {
   console.log('🗑️ Session cleared');
 }
 
-// ==================== ADMIN ORDER FUNCTIONS ====================
-export async function getAllOrders() {
-  try {
-    // ✅ FORCE FULL URL WITH TRAILING SLASH
-    const url = `${API_BASE_URL}/api/admin/orders/`;
-    
-    console.log('🔍 getAllOrders called');
-    console.log('📡 Fetching from:', url);
-    console.log('🌐 API_BASE_URL:', API_BASE_URL);
-    console.log('🔧 process.env.NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    console.log('📊 Response status:', response.status);
-    console.log('📊 Response URL:', response.url);
-    console.log('📊 Response OK:', response.ok);
-    
-    if (!response.ok) {
-      // Try to get error details
-      let errorText = '';
-      try {
-        errorText = await response.text();
-        console.error('❌ Error response:', errorText.substring(0, 200));
-      } catch (e) {
-        console.error('❌ Could not read error response');
-      }
-      
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log('✅ Data received:', data);
-    return data;
-  } catch (error) {
-    console.error('❌ getAllOrders error:', error);
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error stack:', error.stack);
-    throw error;
-  }
-}
-
-// Export the base URL so it can be checked
-export { API_BASE_URL };
-
-// ==================== OTHER FUNCTIONS (keep your existing ones) ====================
-// ... rest of your API functions
-
-// Rate limiting helper
-const rateLimiter = {
-  requests: {},
-  canMakeRequest(key, maxRequests = 10, windowMs = 60000) {
-    const now = Date.now();
-    if (!this.requests[key]) {
-      this.requests[key] = [];
-    }
-    
-    // Remove old requests outside the window
-    this.requests[key] = this.requests[key].filter(time => now - time < windowMs);
-    
-    if (this.requests[key].length >= maxRequests) {
-      return false;
-    }
-    
-    this.requests[key].push(now);
-    return true;
-  }
-};
-
 // ==================== AUTHENTICATION FUNCTIONS ====================
 export async function signup(username, email, password, fullName, srCode, role = 'member', foodPartner = '') {
   try {
@@ -200,7 +83,7 @@ export async function logout() {
       method: 'POST',
       credentials: 'include'
     });
-    clearSession(); // Clear session on logout
+    clearSession();
     return handleResponse(response);
   } catch (error) {
     console.error('❌ Logout error:', error);
@@ -220,7 +103,6 @@ export async function checkAuth() {
   }
 }
 
-// NEW: Update user profile
 export async function updateProfile(userId, profileData) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/profile/${userId}/`, {
@@ -236,7 +118,6 @@ export async function updateProfile(userId, profileData) {
   }
 }
 
-// NEW: Change password
 export async function changePassword(oldPassword, newPassword) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/change-password/`, {
@@ -271,7 +152,6 @@ export async function getMenuItems(filters = {}) {
   }
 }
 
-// NEW: Get single menu item details
 export async function getMenuItem(itemId) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/menu/${itemId}/`);
@@ -282,7 +162,6 @@ export async function getMenuItem(itemId) {
   }
 }
 
-// NEW: Get menu categories
 export async function getCategories() {
   try {
     const response = await fetch(`${API_BASE_URL}/api/menu/categories/`);
@@ -349,7 +228,6 @@ export async function removeFromCart(itemId) {
   }
 }
 
-// NEW: Clear entire cart
 export async function clearCart() {
   try {
     const sessionId = getSessionId();
@@ -392,7 +270,6 @@ export async function getOrders() {
   }
 }
 
-// NEW: Get single order details
 export async function getOrder(orderId) {
   try {
     const sessionId = getSessionId();
@@ -404,7 +281,6 @@ export async function getOrder(orderId) {
   }
 }
 
-// NEW: Cancel order
 export async function cancelOrder(orderId) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/cancel/`, {
@@ -419,7 +295,6 @@ export async function cancelOrder(orderId) {
   }
 }
 
-// NEW: Rate order
 export async function rateOrder(orderId, rating, comment = '') {
   try {
     const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/rate/`, {
@@ -514,7 +389,6 @@ export async function getPartnerMenuItems(partnerName) {
   }
 }
 
-// NEW: Get partner details
 export async function getPartnerDetails(partnerName) {
   try {
     const encodedName = encodeURIComponent(partnerName);
@@ -578,7 +452,6 @@ export async function deleteMenuItem(itemId) {
   }
 }
 
-// NEW: Bulk update menu items
 export async function bulkUpdateMenuItems(updates) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/menu/bulk-update/`, {
@@ -594,15 +467,13 @@ export async function bulkUpdateMenuItems(updates) {
 }
 
 // ==================== ADMIN ORDER FUNCTIONS ====================
-// Admin/app/services/api.js
-
 export async function getAllOrders() {
   try {
     const url = `${API_BASE_URL}/api/admin/orders/`;
-    console.log('🔍 Attempting to fetch from:', url);
-    console.log('🔍 API_BASE_URL:', API_BASE_URL);
+    console.log('🔍 Fetching admin orders from:', url);
     
     const response = await fetch(url, {
+      method: 'GET',
       credentials: 'include',
       headers: {
         'Accept': 'application/json',
@@ -611,11 +482,10 @@ export async function getAllOrders() {
     });
     
     console.log('📡 Response status:', response.status);
-    console.log('📡 Response ok:', response.ok);
     console.log('📡 Response URL:', response.url);
     
     const data = await handleResponse(response);
-    console.log('✅ Data received:', data);
+    console.log('✅ Orders received:', data.orders?.length || 0, 'orders');
     return data;
   } catch (error) {
     console.error('❌ Get all orders error:', error);
@@ -623,7 +493,6 @@ export async function getAllOrders() {
   }
 }
 
-// NEW: Get order statistics
 export async function getOrderStats(dateRange = {}) {
   try {
     const params = new URLSearchParams();
@@ -639,7 +508,6 @@ export async function getOrderStats(dateRange = {}) {
   }
 }
 
-// NEW: Get revenue analytics
 export async function getRevenueAnalytics(period = 'week') {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/analytics/revenue/?period=${period}`);
@@ -678,7 +546,6 @@ export async function updatePartnerOrderStatus(orderId, status) {
   }
 }
 
-// NEW: Get partner statistics
 export async function getPartnerStats(partnerName) {
   try {
     const response = await fetch(
@@ -692,7 +559,6 @@ export async function getPartnerStats(partnerName) {
 }
 
 // ==================== NOTIFICATIONS ====================
-// NEW: Get notifications
 export async function getNotifications() {
   try {
     const sessionId = getSessionId();
@@ -704,7 +570,6 @@ export async function getNotifications() {
   }
 }
 
-// NEW: Mark notification as read
 export async function markNotificationRead(notificationId) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read/`, {
@@ -719,7 +584,6 @@ export async function markNotificationRead(notificationId) {
 }
 
 // ==================== REVIEWS ====================
-// NEW: Submit review for menu item
 export async function submitMenuReview(menuItemId, rating, comment) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/menu/${menuItemId}/reviews/`, {
@@ -738,7 +602,6 @@ export async function submitMenuReview(menuItemId, rating, comment) {
   }
 }
 
-// NEW: Get reviews for menu item
 export async function getMenuReviews(menuItemId) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/menu/${menuItemId}/reviews/`);
@@ -750,7 +613,6 @@ export async function getMenuReviews(menuItemId) {
 }
 
 // ==================== SEARCH ====================
-// NEW: Search across all content
 export async function searchAll(query) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/search/?q=${encodeURIComponent(query)}`);
@@ -762,7 +624,6 @@ export async function searchAll(query) {
 }
 
 // ==================== UTILITY FUNCTIONS ====================
-// NEW: Check service availability
 export async function checkServiceAvailability() {
   try {
     const response = await fetch(`${API_BASE_URL}/api/status/`);
@@ -773,7 +634,6 @@ export async function checkServiceAvailability() {
   }
 }
 
-// NEW: Get available pickup times
 export async function getAvailablePickupTimes(date) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/pickup-times/?date=${date}`);
@@ -784,5 +644,51 @@ export async function getAvailablePickupTimes(date) {
   }
 }
 
-// ==================== EXPORT ====================
+// Owner/app/services/api.js
+
+export async function getPartnerOrders(foodPartner) {
+  try {
+    const url = `${API_BASE_URL}/api/partner/orders/?partner=${encodeURIComponent(foodPartner)}`;
+    console.log('📡 Fetching from:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('❌ Get partner orders error:', error);
+    throw error;
+  }
+}
+
+export async function updatePartnerOrderStatus(orderId, status) {
+  try {
+    const url = `${API_BASE_URL}/api/partner/orders/${orderId}/status/`;
+    
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('❌ Update order status error:', error);
+    throw error;
+  }
+}
+
 export { API_BASE_URL };
+// ==================== EXPORT ====================
