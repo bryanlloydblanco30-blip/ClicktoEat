@@ -124,65 +124,88 @@ export async function signup(username, email, password, role = 'member', foodPar
 }
 
 // Login - USES PROXY TO AVOID CORS ISSUES
-// Login - USES PROXY TO AVOID CORS ISSUES
-// Login - USES PROXY TO AVOID CORS ISSUES
+// Login function with better error handling and URL construction
+// Login function with better error handling and URL construction
 export async function login(username, password) {
   try {
-    // Ensure trailing slash
+    // Ensure trailing slash is present
     const loginUrl = `${ADMIN_API_URL}/api/auth/login/`;
     
     console.log('=== LOGIN DEBUG START ===');
     console.log('🎯 Login URL:', loginUrl);
+    console.log('🔐 Username:', username);
     
-    // Get CSRF token first
+    // First, get CSRF token
     await fetchCsrfToken();
     
     const csrfToken = getCsrfToken();
-    console.log('🔑 CSRF Token:', csrfToken || 'MISSING');
+    console.log('🔑 CSRF Token:', csrfToken ? 'Present' : 'MISSING');
     
-    const response = await fetch(loginUrl, {
+    const requestBody = { username, password };
+    console.log('📦 Request body:', requestBody);
+    
+    const requestOptions = {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         'X-CSRFToken': csrfToken || '',
       },
       credentials: 'include',
-      redirect: 'follow', // Follow redirects
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify(requestBody)
+    };
+    
+    console.log('📨 Request options:', {
+      ...requestOptions,
+      body: '[HIDDEN]'
     });
     
+    console.log('⏳ Sending request...');
+    const response = await fetch(loginUrl, requestOptions);
+    
     console.log('📡 Response status:', response.status);
+    console.log('📡 Response statusText:', response.statusText);
     console.log('📡 Response URL:', response.url);
+    console.log('📡 Response headers:', {
+      'content-type': response.headers.get('content-type'),
+      'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+    });
     
     const responseText = await response.text();
-    console.log('📄 Raw response:', responseText);
+    console.log('📄 Raw response:', responseText.substring(0, 200));
 
     if (!response.ok) {
+      console.error('❌ Response not OK');
       let error = {};
       try {
         error = JSON.parse(responseText);
       } catch (e) {
-        error = { message: responseText || `HTTP ${response.status}` };
+        error = { message: responseText || `HTTP ${response.status} - ${response.statusText}` };
       }
       
-      console.error('❌ Error:', error);
+      console.error('❌ Error details:', error);
       throw new Error(error.error || error.message || 'Login failed');
     }
 
     const data = JSON.parse(responseText);
-    console.log('✅ Success:', data);
+    console.log('✅ Success! Response data:', data);
 
     if (data.user) {
+      console.log('💾 Storing user in localStorage');
       localStorage.setItem('user', JSON.stringify(data.user));
+      
+      const stored = localStorage.getItem('user');
+      console.log('✔️ Verified stored user:', stored ? 'Success' : 'Failed');
     }
 
+    console.log('=== LOGIN DEBUG END ===');
     return data;
+    
   } catch (err) {
-    console.error('❌ Exception:', err);
+    console.error('❌ Login exception:', err);
+    console.error('❌ Exception stack:', err.stack);
     throw err;
   }
 }
-
 // Logout
 export async function logout() {
   const response = await apiFetch('/api/auth/logout/', {

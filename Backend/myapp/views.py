@@ -12,6 +12,16 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from urllib.parse import unquote
 
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.views.decorators.http import require_http_methods
+import json
+
+# ==================== AUTHENTICATION VIEWS ====================
+
 @ensure_csrf_cookie
 @require_http_methods(["POST"])
 def signup_view(request):
@@ -87,9 +97,17 @@ def signup_view(request):
 def login_view(request):
     """User login"""
     try:
+        print("=" * 50)
+        print("LOGIN VIEW CALLED")
+        print(f"Method: {request.method}")
+        print(f"Path: {request.path}")
+        print("=" * 50)
+        
         data = json.loads(request.body)
         username = data.get('username')
         password = data.get('password')
+        
+        print(f"Username: {username}")
         
         if not all([username, password]):
             return JsonResponse({'error': 'Username and password required'}, status=400)
@@ -103,6 +121,8 @@ def login_view(request):
             
             # Get user profile
             profile = user.profile
+            
+            print(f"✅ Login successful for: {username}")
             
             return JsonResponse({
                 'success': True,
@@ -118,10 +138,11 @@ def login_view(request):
                 }
             })
         else:
+            print(f"❌ Invalid credentials for: {username}")
             return JsonResponse({'error': 'Invalid credentials'}, status=401)
             
     except Exception as e:
-        print(f"Login error: {str(e)}")
+        print(f"❌ Login error: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
@@ -144,7 +165,7 @@ def logout_view(request):
 @ensure_csrf_cookie
 @require_http_methods(["GET"])
 def check_auth(request):
-    """Check if user is authenticated"""
+    """Check if user is authenticated - FIXED: Only ONE definition"""
     if request.user.is_authenticated:
         try:
             profile = request.user.profile
