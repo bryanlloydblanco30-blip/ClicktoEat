@@ -56,7 +56,7 @@ export async function signup(username, email, password, role = 'member', foodPar
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     
-    const response = await fetch(`${ADMIN_API_URL}/api/auth/signup/`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/signup/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ export async function login(username, password) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
     
-    const response = await fetch(`${ADMIN_API_URL}/api/auth/login/`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/login/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
