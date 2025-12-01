@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { getMenuItems, addToCart } from '../services/api';
+import { getMenuItems, addToCart, checkAuth } from '../services/api'; // ✅ Add checkAuth here
 
 interface MenuItem {
   id: number;
@@ -78,13 +78,8 @@ function ChosenFoodContent() {
     if (!item) return;
     
     try {
-      // Check authentication with Django backend
-      const authResponse = await fetch('http://localhost:8000/api/auth/check/', {
-        credentials: 'include',
-      });
-      
-      const authData = await authResponse.json();
-      console.log('Auth check:', authData);
+      // ✅ Check authentication with Django backend
+      const authData = await checkAuth();
       
       if (!authData.authenticated) {
         showToast('Please log in to add items to cart', "red");

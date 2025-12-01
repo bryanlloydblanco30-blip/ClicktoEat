@@ -4,8 +4,9 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createOrder, getCart } from "../../services/api";
+import { createOrder, getCart, checkAuth } from "../../services/api";
 import { useToast } from "../../components/Toast";
+
 
 const paymentMethods = [
     {id: 0, name: 'Cash payment', img: '/payment-method/payment-method.png'},
@@ -39,33 +40,28 @@ export default function CheckoutPage() {
   }, []);
 
   const checkAuthAndLoadCheckout = async () => {
-    try {
-      setLoading(true);
-      
-      // Check if user is logged in - check multiple possible keys
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token');
-      const userId = localStorage.getItem('user_id') || localStorage.getItem('userId');
-      const user = localStorage.getItem('user');
-      
-      // Debug: log what's in localStorage
-      console.log('Auth check:', { token: !!token, userId: !!userId, user: !!user });
-      console.log('localStorage keys:', Object.keys(localStorage));
-      
-      if (!token && !user) {
-        setIsAuthenticated(false);
-        setLoading(false);
-        return;
-      }
-      
+  try {
+    setLoading(true);
+    
+    console.log('🔍 Starting checkout auth check...');
+    const authData = await checkAuth();
+    console.log('✅ Auth response:', authData);
+    
+    if (authData && authData.authenticated === true) {
+      console.log('✅ User authenticated:', authData.user);
       setIsAuthenticated(true);
       await loadCheckoutItems();
-    } catch (error) {
-      console.error('Error:', error);
+    } else {
+      console.log('❌ User not authenticated');
       setIsAuthenticated(false);
-      setLoading(false);
     }
-  };
-
+  } catch (error) {
+    console.error('❌ Checkout auth check error:', error);
+    setIsAuthenticated(false);
+  } finally {
+    setLoading(false);
+  }
+};
   const loadCheckoutItems = async () => {
     try {
       const storedItemIds = sessionStorage.getItem('checkout_item_ids');
