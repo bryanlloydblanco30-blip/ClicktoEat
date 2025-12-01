@@ -8,7 +8,7 @@ import json
 from .models import MenuItem, Cart, CartItem, Order, OrderItem, Favorite
 from datetime import datetime
 from urllib.parse import unquote
-
+from django.views.decorators.csrf import csrf_exempt
 # ==================== AUTHENTICATION VIEWS ====================
 
 @csrf_exempt  # Add this line
