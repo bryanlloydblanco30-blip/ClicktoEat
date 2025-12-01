@@ -20,17 +20,29 @@ function getCsrfToken() {
 }
 
 // Generic fetch wrapper with CSRF token
-async function fetchCsrfToken() {
-  try {
-    const response = await fetch(`${ADMIN_API_URL}/api/auth/check/`, {
-      credentials: 'include'
-    });
-    // This will set the CSRF cookie
-    return true;
-  } catch (error) {
-    console.error('Failed to fetch CSRF token:', error);
-    return false;
+async function apiFetch(url, options = {}) {
+  const csrfToken = getCsrfToken();
+  
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Add CSRF token if available
+  if (csrfToken) {
+    defaultHeaders['X-CSRFToken'] = csrfToken;
   }
+
+  const config = {
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...options.headers,
+    },
+    credentials: 'include', // Always include credentials
+  };
+
+  const response = await fetch(`${API_BASE_URL}${url}`, config);
+  return response;
 }
 
 // Get or create session ID (for guest users)
@@ -119,18 +131,23 @@ export async function login(username, password) {
     // Get CSRF token first
     await fetchCsrfToken();
     
+    const csrfToken = getCsrfToken();
+    console.log('🔑 CSRF Token:', csrfToken ? 'Found' : 'Missing');
+    
     const response = await fetch(
       `${ADMIN_API_URL}/api/auth/login/`,
       {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-CSRFToken': getCsrfToken() || '',
+          'X-CSRFToken': csrfToken || '',
         },
         credentials: 'include',
         body: JSON.stringify({ username, password })
       }
     );
+    
+    console.log('📍 Request URL:', `${ADMIN_API_URL}/api/auth/login/`);
 
     console.log('📡 Login response status:', response.status);
 
