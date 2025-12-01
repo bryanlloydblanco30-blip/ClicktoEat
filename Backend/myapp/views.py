@@ -199,42 +199,7 @@ def check_auth(request):
             'user': None
         }, status=401)
 
-@ensure_csrf_cookie  # CRITICAL: This ensures CSRF cookie is set
-@require_http_methods(["GET"])
-def check_auth(request):
-    """Check if user is authenticated"""
-    if request.user.is_authenticated:
-        try:
-            profile = request.user.profile
-            return JsonResponse({
-                'authenticated': True,
-                'user': {
-                    'id': request.user.id,
-                    'username': request.user.username,
-                    'email': request.user.email,
-                    'role': profile.role,
-                    'food_partner': profile.food_partner,
-                    'full_name': getattr(profile, 'full_name', ''),
-                    'sr_code': getattr(profile, 'sr_code', ''),
-                }
-            })
-        except Exception as e:
-            # If profile doesn't exist or has issues
-            return JsonResponse({
-                'authenticated': True,
-                'user': {
-                    'id': request.user.id,
-                    'username': request.user.username,
-                    'email': request.user.email,
-                    'role': 'member',
-                    'food_partner': '',
-                }
-            })
-    else:
-        return JsonResponse({
-            'authenticated': False,
-            'user': None
-        }, status=401)
+
 # ==================== MENU VIEWS ====================
 
 def get_menu_items(request):
