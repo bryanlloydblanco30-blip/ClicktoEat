@@ -2,7 +2,10 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+// At the top of your page.tsx
 import { getPartnerOrders, updatePartnerOrderStatus } from '../services/api';
+  // Inside OwnerContent state
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
 type OrderStatus =
   | "pending"
@@ -50,31 +53,13 @@ function OwnerContent() {
         localStorage.setItem('user', JSON.stringify(user));
         setUserInfo(user);
         loadOrders(user.food_partner);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        window.location.href = 'http://localhost:3000/login';
-      }
-    } else {
-      const userStr = localStorage.getItem('user');
-      
-      if (!userStr) {
-        window.location.href = 'http://localhost:3000/login';
-        return;
-      }
-
-      try {
-        const user = JSON.parse(userStr);
-        
-        if (user.role !== 'staff') {
-          window.location.href = 'http://localhost:3000/login';
-          return;
-        }
-
-        setUserInfo(user);
-        loadOrders(user.food_partner);
-      } catch (error) {
-        console.error('Auth error:', error);
-        window.location.href = 'http://localhost:3000/login';
+      } catch (error: any) {
+        console.error('❌ Error loading orders:', error);
+        setErrorMsg(error.message || 'Failed to load orders');
+        setOrders([]);
+        setRetrying(false);
+      } finally {
+        setLoading(false);
       }
     }
   }, [searchParams]);

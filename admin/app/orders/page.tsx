@@ -34,6 +34,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
   const [error, setError] = useState<string | null>(null);
+  console.log(orders)
 
   // Fetch Data on Load
   useEffect(() => {
@@ -54,14 +55,10 @@ export default function AdminOrdersPage() {
       setError(null);
       
       const data = await getAllOrders();
-      console.log('✅ Admin orders received:', data);
-      
-      // Transform orders to ensure customer_name is always present
       const transformedOrders = (data.orders || []).map((order: any) => ({
         ...order,
-        customer_name: order.customer_name || 'Guest Customer'
-      }));
-      
+      customer_name: order.customer_name || 'Guest Customer'
+    }));
       setOrders(transformedOrders);
     } catch (error: any) {
       console.error("❌ Error fetching admin orders:", error);

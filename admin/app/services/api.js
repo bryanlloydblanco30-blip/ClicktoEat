@@ -644,51 +644,5 @@ export async function getAvailablePickupTimes(date) {
   }
 }
 
-// Owner/app/services/api.js
-
-export async function getPartnerOrders(foodPartner) {
-  try {
-    const url = `${API_BASE_URL}/api/partner/orders/?partner=${encodeURIComponent(foodPartner)}`;
-    console.log('📡 Fetching from:', url);
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('❌ Get partner orders error:', error);
-    throw error;
-  }
-}
-
-export async function updatePartnerOrderStatus(orderId, status) {
-  try {
-    const url = `${API_BASE_URL}/api/partner/orders/${orderId}/status/`;
-    
-    const response = await fetch(url, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('❌ Update order status error:', error);
-    throw error;
-  }
-}
-
 export { API_BASE_URL };
 // ==================== EXPORT ====================
