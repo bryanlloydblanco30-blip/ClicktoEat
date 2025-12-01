@@ -92,9 +92,11 @@ def signup_view(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+@csrf_exempt  # Add this temporarily
 @ensure_csrf_cookie
 @require_http_methods(["POST"])
 def login_view(request):
+    # ... rest of your code
     """User login"""
     try:
         print("=" * 50)

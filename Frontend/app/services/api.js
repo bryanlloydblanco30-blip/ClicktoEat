@@ -125,84 +125,60 @@ export async function signup(username, email, password, role = 'member', foodPar
 
 // Login - USES PROXY TO AVOID CORS ISSUES
 // Login function with better error handling and URL construction
-// Login function with better error handling and URL construction
 export async function login(username, password) {
   try {
-    // Ensure trailing slash is present
     const loginUrl = `${ADMIN_API_URL}/api/auth/login/`;
     
-    console.log('=== LOGIN DEBUG START ===');
     console.log('🎯 Login URL:', loginUrl);
-    console.log('🔐 Username:', username);
     
-    // First, get CSRF token
+    // Get CSRF token first
     await fetchCsrfToken();
-    
     const csrfToken = getCsrfToken();
-    console.log('🔑 CSRF Token:', csrfToken ? 'Present' : 'MISSING');
     
-    const requestBody = { username, password };
-    console.log('📦 Request body:', requestBody);
-    
-    const requestOptions = {
+    const response = await fetch(loginUrl, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'X-CSRFToken': csrfToken || '',
+        ...(csrfToken && { 'X-CSRFToken': csrfToken }),
       },
       credentials: 'include',
-      body: JSON.stringify(requestBody)
-    };
-    
-    console.log('📨 Request options:', {
-      ...requestOptions,
-      body: '[HIDDEN]'
+      body: JSON.stringify({ username, password })
     });
-    
-    console.log('⏳ Sending request...');
-    const response = await fetch(loginUrl, requestOptions);
     
     console.log('📡 Response status:', response.status);
-    console.log('📡 Response statusText:', response.statusText);
-    console.log('📡 Response URL:', response.url);
-    console.log('📡 Response headers:', {
-      'content-type': response.headers.get('content-type'),
-      'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
-    });
     
-    const responseText = await response.text();
-    console.log('📄 Raw response:', responseText.substring(0, 200));
+    // Check if response is HTML (wrong endpoint)
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('text/html')) {
+      console.error('❌ Received HTML instead of JSON - wrong endpoint or CORS issue');
+      throw new Error('Server configuration error - received HTML instead of JSON');
+    }
 
     if (!response.ok) {
-      console.error('❌ Response not OK');
-      let error = {};
+      const errorText = await response.text();
+      console.error('❌ Error response:', errorText);
+      
+      let error;
       try {
-        error = JSON.parse(responseText);
+        error = JSON.parse(errorText);
       } catch (e) {
-        error = { message: responseText || `HTTP ${response.status} - ${response.statusText}` };
+        throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
       }
       
-      console.error('❌ Error details:', error);
       throw new Error(error.error || error.message || 'Login failed');
     }
 
-    const data = JSON.parse(responseText);
-    console.log('✅ Success! Response data:', data);
+    const data = await response.json();
+    console.log('✅ Login successful');
 
     if (data.user) {
-      console.log('💾 Storing user in localStorage');
       localStorage.setItem('user', JSON.stringify(data.user));
-      
-      const stored = localStorage.getItem('user');
-      console.log('✔️ Verified stored user:', stored ? 'Success' : 'Failed');
     }
 
-    console.log('=== LOGIN DEBUG END ===');
     return data;
     
   } catch (err) {
     console.error('❌ Login exception:', err);
-    console.error('❌ Exception stack:', err.stack);
     throw err;
   }
 }
