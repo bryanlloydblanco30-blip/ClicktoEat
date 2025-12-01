@@ -149,6 +149,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://clickto-eat-rxo1-41618asb3-bryans-projects-e4c7e470.vercel.app",
     "https://clickto-eat-rxo1-ipppgapnc-bryans-projects-e4c7e470.vercel.app",
     "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
+    "https://clickto-4ukxdfnjg-bryans-projects-e4c7e470.vercel.app",
     
     # Development URLs
     "http://localhost:3000",
@@ -172,6 +173,7 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store sessions in data
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_SAVE_EVERY_REQUEST = False  # Only save when modified
 SESSION_COOKIE_NAME = 'sessionid'
+APPEND_SLASH = True
 
 # ==================== REST FRAMEWORK SETTINGS ====================
 REST_FRAMEWORK = {
