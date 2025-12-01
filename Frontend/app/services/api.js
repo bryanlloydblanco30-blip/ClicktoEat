@@ -124,40 +124,69 @@ export async function signup(username, email, password, role = 'member', foodPar
 }
 
 // Login - USES PROXY TO AVOID CORS ISSUES
+// Login - USES PROXY TO AVOID CORS ISSUES
+// Login - USES PROXY TO AVOID CORS ISSUES
 export async function login(username, password) {
   try {
-    console.log('🔐 Attempting login via proxy:', ADMIN_API_URL);
+    const loginUrl = `${ADMIN_API_URL}/api/auth/login/`;
+    
+    console.log('=== LOGIN DEBUG START ===');
+    console.log('🎯 ADMIN_API_URL:', ADMIN_API_URL);
+    console.log('🎯 Full URL:', loginUrl);
+    console.log('🎯 Username:', username);
+    console.log('🎯 Password length:', password?.length);
     
     // Get CSRF token first
+    console.log('🔄 Fetching CSRF token...');
     await fetchCsrfToken();
     
     const csrfToken = getCsrfToken();
-    console.log('🔑 CSRF Token:', csrfToken ? 'Found' : 'Missing');
+    console.log('🔑 CSRF Token:', csrfToken || 'MISSING');
     
-    const response = await fetch(
-      `${ADMIN_API_URL}/api/auth/login/`,
-      {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrfToken || '',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ username, password })
-      }
-    );
+    const requestBody = JSON.stringify({ username, password });
+    console.log('📦 Request body:', requestBody);
     
-    console.log('📍 Request URL:', `${ADMIN_API_URL}/api/auth/login/`);
-
-    console.log('📡 Login response status:', response.status);
+    console.log('🚀 Sending login request...');
+    const response = await fetch(loginUrl, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken || '',
+      },
+      credentials: 'include',
+      body: requestBody
+    });
+    
+    console.log('📡 Response status:', response.status);
+    console.log('📡 Response statusText:', response.statusText);
+    console.log('📡 Response URL:', response.url);
+    console.log('📡 Response headers:', Object.fromEntries([...response.headers]));
+    
+    // Get the raw response text first
+    const responseText = await response.text();
+    console.log('📄 Raw response:', responseText);
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      let error = {};
+      try {
+        error = JSON.parse(responseText);
+      } catch (e) {
+        console.error('⚠️ Could not parse error as JSON:', e);
+        error = { message: responseText || 'Login failed' };
+      }
+      
       console.error('❌ Login error details:', error);
-      throw new Error(error.error || error.message || 'Login failed');
+      throw new Error(error.error || error.message || `Login failed with status ${response.status}`);
     }
 
-    const data = await response.json();
+    let data = {};
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('⚠️ Could not parse success response as JSON:', e);
+      throw new Error('Invalid response from server');
+    }
+    
     console.log('✅ Login successful:', data);
 
     if (data.user) {
@@ -165,9 +194,12 @@ export async function login(username, password) {
       console.log('💾 User stored in localStorage');
     }
 
+    console.log('=== LOGIN DEBUG END ===');
     return data;
   } catch (err) {
     console.error('❌ Login exception:', err);
+    console.error('❌ Error stack:', err.stack);
+    console.log('=== LOGIN DEBUG END (WITH ERROR) ===');
     throw err;
   }
 }
@@ -487,4 +519,4 @@ export async function updateOrderStatus(orderId, status) {
   
   if (!response.ok) throw new Error('Failed to update order status');
   return response.json();
-}
+} 
