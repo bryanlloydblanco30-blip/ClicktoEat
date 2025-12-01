@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { login } from '../services/api';
 
 // Admin app URL - update this to your actual admin deployment URL
-const ADMIN_URL = "https://clickto-eat-rxo1-iis0k4cuk-bryans-projects-e4c7e470.vercel.app"
+const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || "https://clickto-eat-rxo1.vercel.app"
 
 export default function LoginPage() {
   const router = useRouter();

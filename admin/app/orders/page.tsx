@@ -27,10 +27,7 @@ type Order = {
 const STATUS_OPTIONS = ["pending", "confirmed", "preparing", "ready", "completed", "cancelled"];
 
 // Mock API function - replace with your actual import
-const getAllOrders = async () => {
-  const response = await fetch('/api/admin/orders');
-  return response.json();
-};
+import { getAllOrders } from '../services/api';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
