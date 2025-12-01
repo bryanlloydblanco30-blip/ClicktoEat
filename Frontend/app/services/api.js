@@ -20,29 +20,17 @@ function getCsrfToken() {
 }
 
 // Generic fetch wrapper with CSRF token
-async function apiFetch(url, options = {}) {
-  const csrfToken = getCsrfToken();
-  
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-  };
-  
-  // Add CSRF token if available
-  if (csrfToken) {
-    defaultHeaders['X-CSRFToken'] = csrfToken;
+async function fetchCsrfToken() {
+  try {
+    const response = await fetch(`${ADMIN_API_URL}/api/auth/check/`, {
+      credentials: 'include'
+    });
+    // This will set the CSRF cookie
+    return true;
+  } catch (error) {
+    console.error('Failed to fetch CSRF token:', error);
+    return false;
   }
-
-  const config = {
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
-    credentials: 'include', // Always include credentials
-  };
-
-  const response = await fetch(`${API_BASE_URL}${url}`, config);
-  return response;
 }
 
 // Get or create session ID (for guest users)
@@ -72,10 +60,32 @@ export function hasRole(role) {
 
 // ==================== AUTHENTICATION FUNCTIONS ====================
 
+// Get CSRF token from backend
+async function fetchCsrfToken() {
+  try {
+    const response = await fetch(`${ADMIN_API_URL}/api/auth/check/`, {
+      credentials: 'include'
+    });
+    // This will set the CSRF cookie
+    return true;
+  } catch (error) {
+    console.error('Failed to fetch CSRF token:', error);
+    return false;
+  }
+}
+
 // Signup
 export async function signup(username, email, password, role = 'member', foodPartner = '', fullName = '', srCode = '') {
-  const response = await apiFetch('/api/auth/signup/', {
+  // Get CSRF token first
+  await fetchCsrfToken();
+  
+  const response = await fetch(`${ADMIN_API_URL}/api/auth/signup/`, {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken() || '',
+    },
+    credentials: 'include',
     body: JSON.stringify({
       username,
       email,
@@ -106,12 +116,16 @@ export async function login(username, password) {
   try {
     console.log('🔐 Attempting login via proxy:', ADMIN_API_URL);
     
+    // Get CSRF token first
+    await fetchCsrfToken();
+    
     const response = await fetch(
       `${ADMIN_API_URL}/api/auth/login/`,
       {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken() || '',
         },
         credentials: 'include',
         body: JSON.stringify({ username, password })
