@@ -13,15 +13,7 @@ const nextConfig = {
       },
     ],
   },
-  
-  async rewrites() {
-    return [
-      {
-        source: '/admin-api/:path*',
-        destination: 'https://clicktoeat-pw67.onrender.com/:path*',  // ✅ Use Render backend
-      },
-    ];
-  },
+  // Remove the rewrites and headers sections completely
 };
 
 export default nextConfig;

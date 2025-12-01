@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const ADMIN_API_URL = '/admin-api'; // Use the proxy
+const ADMIN_API_URL = 'https://clicktoeat-pw67.onrender.com';
 
 // ==================== HELPER FUNCTIONS ====================
 
