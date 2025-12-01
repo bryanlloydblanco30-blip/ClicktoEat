@@ -58,8 +58,8 @@ export default function LoginPage() {
           window.location.href = ADMIN_URL;
           
           // Option 2: Pass data via URL parameter (if admin app needs it immediately)
-          // const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
-          // window.location.href = `${ADMIN_URL}?auth=success&user=${userDataEncoded}`;
+          const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
+          window.location.href = `${ADMIN_URL}?auth=success&user=${userDataEncoded}`;
           
         } else if (userData.role === 'staff') {
           console.log('→ Staff role detected - Redirecting to owner page');

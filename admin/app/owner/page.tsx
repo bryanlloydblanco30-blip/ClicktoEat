@@ -23,6 +23,7 @@ interface Order {
   pickup_time?: string;  // ✅ Added
 }
 
+
 function OwnerContent() {
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -33,6 +34,7 @@ function OwnerContent() {
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
 
   useEffect(() => {
+    
     const userParam = searchParams.get('user');
     
     if (userParam) {

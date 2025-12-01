@@ -211,7 +211,7 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="w-full">
+    <main className="w-full p-4 md:p-6">
       {/* Welcome Message */}
       {user && (
         <div className="mb-6 bg-white rounded-xl shadow-sm p-4 border-l-4 border-red-500">

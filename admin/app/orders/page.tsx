@@ -20,22 +20,27 @@ type Order = {
   pickup_time: string;
   status: string;
   created_at: string;
-  customer_name?: string;
+  customer_name: string;  // ✅ Made required
   items: OrderItem[];
 };
 
 const STATUS_OPTIONS = ["pending", "confirmed", "preparing", "ready", "completed", "cancelled"];
 
-// Mock API function - replace with your actual import
+// Import API function
 import { getAllOrders } from '../services/api';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch Data on Load
   useEffect(() => {
+    console.log('🔍 Environment Check:');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+    
     fetchData();
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchData, 30000);
@@ -44,13 +49,26 @@ export default function AdminOrdersPage() {
 
   const fetchData = async () => {
     try {
+      console.log('📡 Fetching admin orders...');
       setLoading(true);
+      setError(null);
+      
       const data = await getAllOrders();
-      console.log('Admin orders received:', data);
-      setOrders(data.orders || []); 
-    } catch (error) {
-      console.error("Error fetching admin orders:", error);
-      alert("Failed to load orders. Check backend connection.");
+      console.log('✅ Admin orders received:', data);
+      
+      // Transform orders to ensure customer_name is always present
+      const transformedOrders = (data.orders || []).map((order: any) => ({
+        ...order,
+        customer_name: order.customer_name || 'Guest Customer'
+      }));
+      
+      setOrders(transformedOrders);
+    } catch (error: any) {
+      console.error("❌ Error fetching admin orders:", error);
+      setError(error.message || 'Failed to load orders');
+      
+      // Show user-friendly error
+      alert(`Failed to load orders.\n\nError: ${error.message}\n\nPlease check:\n1. Backend server is running\n2. CORS is configured\n3. Environment variables are set`);
     } finally {
       setLoading(false);
     }
@@ -64,12 +82,29 @@ export default function AdminOrdersPage() {
 
   // Helper for formatting
   const formatTime = (timeString: string) => {
-    if (!timeString) return "";
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+    if (!timeString) return "N/A";
+    try {
+      const [hours, minutes] = timeString.split(':');
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch {
+      return timeString;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
   };
 
   // Count orders by status
@@ -78,7 +113,34 @@ export default function AdminOrdersPage() {
     return acc;
   }, {} as Record<string, number>);
 
-  if (loading) return <div className="p-10 text-center">Loading Admin Dashboard...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading Admin Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && orders.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Failed to Load Orders</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={fetchData}
+            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
@@ -89,12 +151,19 @@ export default function AdminOrdersPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-800">All Orders (Admin View)</h1>
               <p className="text-gray-600 mt-1">Monitor all orders - Status managed by partner staff</p>
+              {process.env.NEXT_PUBLIC_API_URL && (
+                <p className="text-xs text-gray-400 mt-1">
+                  API: {process.env.NEXT_PUBLIC_API_URL}
+                </p>
+              )}
             </div>
             <button 
               onClick={fetchData}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 text-sm flex items-center gap-2"
+              disabled={loading}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 text-sm flex items-center gap-2 disabled:opacity-50"
             >
-              <span>🔄</span> Refresh
+              <span className={loading ? 'animate-spin' : ''}>🔄</span> 
+              {loading ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
 
@@ -147,22 +216,24 @@ export default function AdminOrdersPage() {
                   <tr key={order.id} className="hover:bg-red-50/30 transition-colors">
                     <td className="p-4">
                       <span className="font-bold text-gray-800">#{order.id}</span>
-                      <div className="text-xs text-gray-500 mt-1">{new Date(order.created_at).toLocaleDateString()}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {formatDate(order.created_at)}
+                      </div>
                     </td>
                     
-                    {/* ✅ CUSTOMER NAME COLUMN */}
+                    {/* ✅ CUSTOMER NAME COLUMN - Enhanced */}
                     <td className="p-4">
                       <div className="font-medium text-gray-800">
-                        {order.customer_name || 'N/A'}
+                        {order.customer_name}
                       </div>
                     </td>
                     
                     <td className="p-4">
                       <div className="text-sm font-medium text-gray-700">
-                        {new Date(order.pickup_date).toLocaleDateString()}
+                        {formatDate(order.pickup_date)}
                       </div>
                       <div className="text-xs text-red-600 font-semibold">
-                        {formatTime(order.pickup_time)}
+                        🕒 {formatTime(order.pickup_time)}
                       </div>
                     </td>
 
@@ -188,7 +259,7 @@ export default function AdminOrdersPage() {
                     <td className="p-4">
                       <div className="font-bold text-gray-800">₱{parseFloat(order.total).toFixed(2)}</div>
                       {parseFloat(order.tip) > 0 && (
-                        <span className="text-xs text-green-600">+₱{parseFloat(order.tip)} tip</span>
+                        <span className="text-xs text-green-600">+₱{parseFloat(order.tip).toFixed(2)} tip</span>
                       )}
                     </td>
 
@@ -212,10 +283,16 @@ export default function AdminOrdersPage() {
             
             {filteredOrders.length === 0 && (
               <div className="p-8 text-center text-gray-500">
-                No orders found for this filter.
+                <div className="text-4xl mb-2">📦</div>
+                <p>No orders found for this filter.</p>
               </div>
             )}
           </div>
+        </div>
+
+        {/* Footer Info */}
+        <div className="mt-6 text-center text-sm text-gray-500">
+          Last updated: {new Date().toLocaleTimeString()} • Total Orders: {orders.length}
         </div>
       </div>
     </main>

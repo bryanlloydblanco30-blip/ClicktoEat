@@ -149,7 +149,9 @@ CSRF_TRUSTED_ORIGINS = [
     "https://clickto-eat-rxo1-41618asb3-bryans-projects-e4c7e470.vercel.app",
     "https://clickto-eat-rxo1-ipppgapnc-bryans-projects-e4c7e470.vercel.app",
     "https://clickto-ekjcpfwia-bryans-projects-e4c7e470.vercel.app",
+    'https://*.vercel.app',
     "https://clickto-4ukxdfnjg-bryans-projects-e4c7e470.vercel.app",
+    
     
     # Development URLs
     "http://localhost:3000",
@@ -168,6 +170,7 @@ CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False
 
+CORS_ALLOW_ALL_ORIGINS = True  # Only for local testing!
 # Session configuration
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store sessions in database
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds

@@ -43,7 +43,7 @@ export default function RootLayout({
               <Sidebar />
               <div className="w-full">
                 <Navbar />
-                <main className="p-6">
+                <main>
                   {children}
                 </main>
               </div>

@@ -4,10 +4,18 @@
 // ==================== CONFIGURATION ====================
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clicktoeat-pw67.onrender.com';
 
-console.log('🌐 API Configuration:', {
+// Validation check
+if (!API_BASE_URL.startsWith('http')) {
+  console.error('❌ CRITICAL: API_BASE_URL must be a full URL starting with http/https');
+  console.error('Current value:', API_BASE_URL);
+  throw new Error('Invalid API_BASE_URL configuration');
+}
+
+console.log('🌐 Admin API Configuration:', {
   API_BASE_URL,
-  environment: process.env.NODE_ENV
-});
+  environment: process.env.NODE_ENV,
+  hasEnvVar: !!process.env.NEXT_PUBLIC_API_URL
+});;
 
 // ==================== SESSION MANAGEMENT ====================
 export function getSessionId() {
@@ -26,6 +34,26 @@ export function clearSession() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('cart_session_id');
   console.log('🗑️ Session cleared');
+}
+
+// Admin/app/services/api.js
+
+// ==================== CONFIGURATION ====================
+// CRITICAL FIX: Always use the full backend URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://clicktoeat-pw67.onrender.com';
+
+// Runtime validation to catch issues early
+if (typeof window !== 'undefined') {
+  console.log('🔍 API Configuration Check:');
+  console.log('  NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+  console.log('  API_BASE_URL:', API_BASE_URL);
+  console.log('  Should be: https://clicktoeat-pw67.onrender.com');
+  
+  // Warn if using relative paths
+  if (!API_BASE_URL.startsWith('http')) {
+    console.error('❌ CRITICAL ERROR: API_BASE_URL is not a full URL!');
+    console.error('Current value:', API_BASE_URL);
+  }
 }
 
 // ==================== HELPER FUNCTIONS ====================
@@ -47,6 +75,79 @@ async function handleResponse(response) {
   
   return response.json();
 }
+
+// ==================== SESSION MANAGEMENT ====================
+export function getSessionId() {
+  if (typeof window === 'undefined') return null;
+  
+  let sessionId = localStorage.getItem('cart_session_id');
+  if (!sessionId) {
+    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('cart_session_id', sessionId);
+    console.log('🆔 New session created:', sessionId);
+  }
+  return sessionId;
+}
+
+export function clearSession() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('cart_session_id');
+  console.log('🗑️ Session cleared');
+}
+
+// ==================== ADMIN ORDER FUNCTIONS ====================
+export async function getAllOrders() {
+  try {
+    // ✅ FORCE FULL URL WITH TRAILING SLASH
+    const url = `${API_BASE_URL}/api/admin/orders/`;
+    
+    console.log('🔍 getAllOrders called');
+    console.log('📡 Fetching from:', url);
+    console.log('🌐 API_BASE_URL:', API_BASE_URL);
+    console.log('🔧 process.env.NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('📊 Response status:', response.status);
+    console.log('📊 Response URL:', response.url);
+    console.log('📊 Response OK:', response.ok);
+    
+    if (!response.ok) {
+      // Try to get error details
+      let errorText = '';
+      try {
+        errorText = await response.text();
+        console.error('❌ Error response:', errorText.substring(0, 200));
+      } catch (e) {
+        console.error('❌ Could not read error response');
+      }
+      
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Data received:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ getAllOrders error:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    throw error;
+  }
+}
+
+// Export the base URL so it can be checked
+export { API_BASE_URL };
+
+// ==================== OTHER FUNCTIONS (keep your existing ones) ====================
+// ... rest of your API functions
 
 // Rate limiting helper
 const rateLimiter = {
@@ -89,21 +190,6 @@ export async function signup(username, email, password, fullName, srCode, role =
     return handleResponse(response);
   } catch (error) {
     console.error('❌ Signup error:', error);
-    throw error;
-  }
-}
-
-export async function login(username, password) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ username, password })
-    });
-    return handleResponse(response);
-  } catch (error) {
-    console.error('❌ Login error:', error);
     throw error;
   }
 }
@@ -508,27 +594,31 @@ export async function bulkUpdateMenuItems(updates) {
 }
 
 // ==================== ADMIN ORDER FUNCTIONS ====================
+// Admin/app/services/api.js
+
 export async function getAllOrders() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/admin/orders/`);
+    const url = `${API_BASE_URL}/api/admin/orders/`;
+    console.log('🔍 Attempting to fetch from:', url);
+    console.log('🔍 API_BASE_URL:', API_BASE_URL);
+    
+    const response = await fetch(url, {
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('📡 Response status:', response.status);
+    console.log('📡 Response ok:', response.ok);
+    console.log('📡 Response URL:', response.url);
+    
     const data = await handleResponse(response);
+    console.log('✅ Data received:', data);
     return data;
   } catch (error) {
     console.error('❌ Get all orders error:', error);
-    throw error;
-  }
-}
-
-export async function updateOrderStatus(orderId, status) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/status/`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
-    return handleResponse(response);
-  } catch (error) {
-    console.error('❌ Update order status error:', error);
     throw error;
   }
 }

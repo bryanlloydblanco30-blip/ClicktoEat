@@ -621,6 +621,7 @@ def get_orders(request):
                 'pickup_time': order.pickup_time.isoformat(),
                 'status': order.status,
                 'created_at': order.created_at.isoformat(),
+                'customer_name': order.customer_name or f'Guest #{order.session_id[:8]}',  # ✅ This line
                 'items': items_data
             })
         

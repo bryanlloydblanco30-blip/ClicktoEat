@@ -89,7 +89,7 @@ export default function Mainpage() {
   }
 
   return (
-    <section className="p-6">
+    <section className="p-.1">
       {/* Header */}
       <div className="flex items-center mb-6">
         <Image src="/shopping-bag.png" height={30} width={30} alt="shopping bag" />
